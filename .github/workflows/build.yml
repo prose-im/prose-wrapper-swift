@@ -1,0 +1,83 @@
+on: [workflow_dispatch]
+
+name: build
+
+jobs:
+  release-number:
+    name: Check if release already exists
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.release-number.outputs.ok }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: false
+
+      - name: Get prose-core-client submodule SHA and set ok flag if release does not exist.
+        id: release-number
+        run: scripts/check-release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    name: Build Swift Package
+    needs:
+      - release-number
+    if: ${{ needs.release-number.outputs.ok == 'true' }}
+    runs-on: macos-12
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Fetch dependencies
+        run: scripts/fetch-dependencies.sh
+
+      - name: Install Automake
+        run: brew install automake
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install Rust targets
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin x86_64-apple-ios aarch64-apple-ios-sim aarch64-apple-ios
+
+      - name: Get libstrophe submodule SHA
+        id: lstrophesha
+        run: echo "::set-output name=lstrophesha::$(git rev-parse @:./dependencies/libstrophe)"
+
+      - name: Cache libstrophe
+        id: cache-libstrophe
+        uses: actions/cache@v2
+        with:
+          path: Build/libstrophe
+          key: libstrophe-${{ steps.lstrophesha.outputs.lstrophesha }}
+
+      - name: Cache uniffi-rs build artifacts
+        id: cache-unffi-rs
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            dependencies/uniffi-rs/target
+          key: cargo-uniffi-rs-${{ hashFiles('./dependencies/uniffi-rs/**/Cargo.lock') }}
+
+      - name: Build libstrophe
+        run: scripts/build-libstrophe.sh
+
+      - name: Build core client
+        run: scripts/build-core-client.sh
+
+      - name: Build swift package
+        run: scripts/build-swift-package.sh
+
+      - name: Create release
+        run: scripts/create-github-release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
