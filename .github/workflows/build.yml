@@ -1,6 +1,6 @@
 on: [workflow_dispatch]
 
-name: build
+name: Build
 
 jobs:
   release-number:
