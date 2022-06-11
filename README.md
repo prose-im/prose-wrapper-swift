@@ -1,6 +1,14 @@
 # prose-wrapper-swift
 
+[![Build](https://github.com/prose-im/prose-wrapper-swift/workflows/build/badge.svg?branch=master)](https://github.com/prose-im/prose-wrapper-swift/actions/workflows/build.yml)
+
+**Prose wrappers for Swift.**
+
+## Purpose
+
 Builds and hosts [prose-core-client](https://github.com/prose-im/prose-core-client) as a Swift Package Manager package.
+
+## How To Build?
 
 To build locally install the following dependencies:
 
