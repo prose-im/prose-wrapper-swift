@@ -4,6 +4,8 @@
 
 **Prose wrappers for Swift.**
 
+Copyright 2022, Prose Foundation.
+
 ## Purpose
 
 Builds and hosts [prose-core-client](https://github.com/prose-im/prose-core-client) as a Swift Package Manager package.
