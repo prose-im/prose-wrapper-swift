@@ -32,7 +32,12 @@ let package = Package(
     .target(
       name: "${SWIFT_LIB_NAME}",
       dependencies: ["${FFI_LIB_NAME}"],
-      linkerSettings: [.linkedLibrary("xml2"), .linkedLibrary("expat"), .linkedLibrary("resolv")]
+      linkerSettings: [
+        .linkedLibrary("xml2"), 
+        .linkedLibrary("expat"), 
+        .linkedLibrary("resolv"), 
+        .unsafeFlags(["-Wl,-no_compact_unwind"])
+      ]
     ),
     .binaryTarget(
       name: "${FFI_LIB_NAME}",

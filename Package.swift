@@ -11,12 +11,17 @@ let package = Package(
     .target(
       name: "ProseCoreClientFFI",
       dependencies: ["_ProseCoreClientFFI"],
-      linkerSettings: [.linkedLibrary("xml2"), .linkedLibrary("expat"), .linkedLibrary("resolv")]
+      linkerSettings: [
+        .linkedLibrary("xml2"), 
+        .linkedLibrary("expat"), 
+        .linkedLibrary("resolv"), 
+        .unsafeFlags(["-Wl,-no_compact_unwind"])
+      ]
     ),
     .binaryTarget(
       name: "_ProseCoreClientFFI",
-      url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/0.1.0/_ProseCoreClientFFI.xcframework.zip",
-      checksum: "90a0061ec2a0cdc4ade0094babc65da8fba6400c209c86d48e842c8d551373cd"
+      url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/0.1.1/_ProseCoreClientFFI.xcframework.zip",
+      checksum: "53f1ddde94cde2a416616b5995fdb56262f71404db636fc74c7144b8dcf39173"
     ),
   ]
 )
