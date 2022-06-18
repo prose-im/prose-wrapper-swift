@@ -4,7 +4,7 @@
 
 **Prose wrappers for Swift.**
 
-Copyright 2022, Prose Foundation.
+Copyright 2022, Prose Foundation - Released under the [Mozilla Public License 2.0](./LICENSE.md).
 
 ## Purpose
 
