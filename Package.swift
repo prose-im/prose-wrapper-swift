@@ -20,8 +20,8 @@ let package = Package(
     ),
     .binaryTarget(
       name: "_ProseCoreClientFFI",
-      url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/0.1.3/_ProseCoreClientFFI.xcframework.zip",
-      checksum: "35e5c769d851b44f9edf28f77377e17ffde5dde240775c5d92f19842e95dabd7"
+      url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/0.1.4/_ProseCoreClientFFI.xcframework.zip",
+      checksum: "9e079cb9a7b11f6bcabf7dac3fb7fee71217a2aa5caa0a731e6f185bd3788b1f"
     ),
   ]
 )
