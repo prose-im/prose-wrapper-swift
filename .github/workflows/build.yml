@@ -64,9 +64,6 @@ jobs:
       - name: Build core client
         run: scripts/build-core-client.sh
 
-      - name: Build swift package
-        run: scripts/build-swift-package.sh
-
       - name: Create release
         run: scripts/create-github-release.sh
         env:
