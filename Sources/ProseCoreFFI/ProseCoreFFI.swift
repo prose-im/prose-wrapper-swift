@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -342,7 +342,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -382,7 +382,7 @@ public class Client: ClientProtocol {
     }
 
     public convenience init(jid: FullJid, cacheDir: String, delegate: ClientDelegate?) throws {
-        self.init(unsafeFromRawPointer: try rustCallWithError(FfiConverterTypeClientError.self) {
+        try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeClientError.self) {
             prose_core_ffi_b073_Client_new(
                 FfiConverterTypeFullJid.lower(jid),
                 FfiConverterString.lower(cacheDir),
@@ -2004,27 +2004,27 @@ public struct FfiConverterTypeClientEvent: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClientEvent {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .connectionStatusChanged(
-                event: try FfiConverterTypeConnectionEvent.read(from: &buf)
+        case 1: return try .connectionStatusChanged(
+                event: FfiConverterTypeConnectionEvent.read(from: &buf)
             )
 
-        case 2: return .contactChanged(
-                jid: try FfiConverterTypeBareJid.read(from: &buf)
+        case 2: return try .contactChanged(
+                jid: FfiConverterTypeBareJid.read(from: &buf)
             )
 
-        case 3: return .messagesAppended(
-                conversation: try FfiConverterTypeBareJid.read(from: &buf),
-                messageIds: try FfiConverterSequenceTypeMessageId.read(from: &buf)
+        case 3: return try .messagesAppended(
+                conversation: FfiConverterTypeBareJid.read(from: &buf),
+                messageIds: FfiConverterSequenceTypeMessageId.read(from: &buf)
             )
 
-        case 4: return .messagesUpdated(
-                conversation: try FfiConverterTypeBareJid.read(from: &buf),
-                messageIds: try FfiConverterSequenceTypeMessageId.read(from: &buf)
+        case 4: return try .messagesUpdated(
+                conversation: FfiConverterTypeBareJid.read(from: &buf),
+                messageIds: FfiConverterSequenceTypeMessageId.read(from: &buf)
             )
 
-        case 5: return .messagesDeleted(
-                conversation: try FfiConverterTypeBareJid.read(from: &buf),
-                messageIds: try FfiConverterSequenceTypeMessageId.read(from: &buf)
+        case 5: return try .messagesDeleted(
+                conversation: FfiConverterTypeBareJid.read(from: &buf),
+                messageIds: FfiConverterSequenceTypeMessageId.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2084,8 +2084,8 @@ public struct FfiConverterTypeConnectionEvent: FfiConverterRustBuffer {
         switch variant {
         case 1: return .connect
 
-        case 2: return .disconnect(
-                error: try FfiConverterTypeConnectionError.read(from: &buf)
+        case 2: return try .disconnect(
+                error: FfiConverterTypeConnectionError.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2238,8 +2238,8 @@ public struct FfiConverterTypeClientError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClientError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .Generic(
-                msg: try FfiConverterString.read(from: &buf)
+        case 1: return try .Generic(
+                msg: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2273,8 +2273,8 @@ public struct FfiConverterTypeConnectionError: FfiConverterRustBuffer {
         switch variant {
         case 1: return .TimedOut
         case 2: return .InvalidCredentials
-        case 3: return .Generic(
-                msg: try FfiConverterString.read(from: &buf)
+        case 3: return try .Generic(
+                msg: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2320,20 +2320,20 @@ public struct FfiConverterTypeJidParseError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> JidParseError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .NoDomain(
-                message: try FfiConverterString.read(from: &buf)
+        case 1: return try .NoDomain(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 2: return .NoResource(
-                message: try FfiConverterString.read(from: &buf)
+        case 2: return try .NoResource(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 3: return .EmptyNode(
-                message: try FfiConverterString.read(from: &buf)
+        case 3: return try .EmptyNode(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 4: return .EmptyResource(
-                message: try FfiConverterString.read(from: &buf)
+        case 4: return try .EmptyResource(
+                message: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2441,7 +2441,7 @@ private let foreignCallbackCallbackInterfaceClientDelegate: ForeignCallback =
             var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
             func makeCall() throws -> Int32 {
                 try swiftCallbackInterface.handleEvent(
-                    event: try FfiConverterTypeClientEvent.read(from: &reader)
+                    event: FfiConverterTypeClientEvent.read(from: &reader)
                 )
                 return UNIFFI_CALLBACK_SUCCESS
             }
@@ -2543,8 +2543,8 @@ private let foreignCallbackCallbackInterfaceLogger: ForeignCallback =
             var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
             func makeCall() throws -> Int32 {
                 try swiftCallbackInterface.log(
-                    level: try FfiConverterTypeLogLevel.read(from: &reader),
-                    message: try FfiConverterString.read(from: &reader)
+                    level: FfiConverterTypeLogLevel.read(from: &reader),
+                    message: FfiConverterString.read(from: &reader)
                 )
                 return UNIFFI_CALLBACK_SUCCESS
             }
@@ -2795,7 +2795,7 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: &buf))
+            try seq.append(FfiConverterString.read(from: &buf))
         }
         return seq
     }
@@ -2817,7 +2817,7 @@ private struct FfiConverterSequenceTypeBareJid: FfiConverterRustBuffer {
         var seq = [BareJid]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeBareJid.read(from: &buf))
+            try seq.append(FfiConverterTypeBareJid.read(from: &buf))
         }
         return seq
     }
@@ -2839,7 +2839,7 @@ private struct FfiConverterSequenceTypeContact: FfiConverterRustBuffer {
         var seq = [Contact]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeContact.read(from: &buf))
+            try seq.append(FfiConverterTypeContact.read(from: &buf))
         }
         return seq
     }
@@ -2861,7 +2861,7 @@ private struct FfiConverterSequenceTypeMessage: FfiConverterRustBuffer {
         var seq = [Message]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeMessage.read(from: &buf))
+            try seq.append(FfiConverterTypeMessage.read(from: &buf))
         }
         return seq
     }
@@ -2883,7 +2883,7 @@ private struct FfiConverterSequenceTypeReaction: FfiConverterRustBuffer {
         var seq = [Reaction]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeReaction.read(from: &buf))
+            try seq.append(FfiConverterTypeReaction.read(from: &buf))
         }
         return seq
     }
@@ -2905,7 +2905,7 @@ private struct FfiConverterSequenceTypeMessageId: FfiConverterRustBuffer {
         var seq = [MessageId]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeMessageId.read(from: &buf))
+            try seq.append(FfiConverterTypeMessageId.read(from: &buf))
         }
         return seq
     }
@@ -3123,7 +3123,7 @@ public func formatJid(jid: BareJid) -> String {
 
 public func parseJid(jid: String) throws -> BareJid {
     return try FfiConverterTypeBareJid.lift(
-        try rustCallWithError(FfiConverterTypeJidParseError.self) {
+        rustCallWithError(FfiConverterTypeJidParseError.self) {
             _uniffi_prose_core_ffi_parse_jid_5ef6(
                 FfiConverterString.lower(jid), $0
             )
