@@ -29,15 +29,24 @@ combine_libraries_for_arch() {
   local arch=$1
   local platform=$2
   local build_dir="${3}/${platform}-${arch}"
+  local info=$(xcrun lipo -info "${OPENSSL_PATH}/${platform}/lib/libssl.a")
+  
+  local libssl_path="${OPENSSL_PATH}/${platform}/lib/libssl.a"
+  local libcrypto_path="${OPENSSL_PATH}/${platform}/lib/libcrypto.a"
 
-  xcrun lipo -extract "${arch}" "${OPENSSL_PATH}/${platform}/lib/libssl.a" -o "${build_dir}/libssl.a"
-  xcrun lipo -extract "${arch}" "${OPENSSL_PATH}/${platform}/lib/libcrypto.a" -o "${build_dir}/libcrypto.a"
+  # Check if we actually have a fat file…
+  if [[ $info == "Architectures in the fat file"* ]]; then
+    xcrun lipo -extract "${arch}" "${OPENSSL_PATH}/${platform}/lib/libssl.a" -o "${build_dir}/libssl.a"
+    xcrun lipo -extract "${arch}" "${OPENSSL_PATH}/${platform}/lib/libcrypto.a" -o "${build_dir}/libcrypto.a"
+    libssl_path="${build_dir}/libssl.a"
+    libcrypto_path="${build_dir}/libcrypto.a"
+  fi
 
   xcrun libtool -static \
     -o "${build_dir}/libstrophe-combined.a" \
     "${build_dir}/lib/libstrophe.a" \
-    "${build_dir}/libssl.a" \
-    "${build_dir}/libcrypto.a"
+    "${libssl_path}" \
+    "${libcrypto_path}"
 }
 
 build_macos() {

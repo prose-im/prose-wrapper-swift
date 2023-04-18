@@ -1,27 +1,18 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.8
 import PackageDescription
 
 let package = Package(
-  name: "ProseCoreClientFFI",
-  platforms: [.macOS(.v12), .iOS(.v14)],
+  name: "ProseCoreFFI",
+  platforms: [.macOS(.v11), .iOS(.v13)],
   products: [
-    .library(name: "ProseCoreClientFFI", targets: ["ProseCoreClientFFI"]),
+    .library(name: "ProseCoreFFI", targets: ["ProseCoreFFI"]),
   ],
   targets: [
-    .target(
-      name: "ProseCoreClientFFI",
-      dependencies: ["_ProseCoreClientFFI"],
-      linkerSettings: [
-        .linkedLibrary("xml2"), 
-        .linkedLibrary("expat"), 
-        .linkedLibrary("resolv"), 
-        .unsafeFlags(["-Wl,-no_compact_unwind"])
-      ]
-    ),
+    .target(name: "ProseCoreFFI", dependencies: ["ProseCoreFFIFFI"]),
     .binaryTarget(
-      name: "_ProseCoreClientFFI",
-      url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/0.4.3/_ProseCoreClientFFI.xcframework.zip",
-      checksum: "ab12a045132a292f7c630908e8936554274e22fa812ebce2baa77e0fb6f96a9a"
+      name: "ProseCoreFFIFFI",
+      url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/0.4.3/ProseCoreFFI.xcframework.zip",
+      checksum: "2acb5e10d1a1ea41bf8c610ca0eae9b642eefc6cf235efaf65727fe37186ed57"
     ),
   ]
 )

@@ -8,6 +8,3 @@ libstrophe: fetch-dependencies
 
 client: libstrophe
 	@scripts/build-core-client.sh
-
-swift-package: client
-	@scripts/build-swift-package.sh
