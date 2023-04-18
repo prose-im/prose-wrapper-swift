@@ -49,7 +49,7 @@ jobs:
 
       - name: Get libstrophe submodule SHA
         id: lstrophesha
-        run: echo "::set-output name=lstrophesha::$(git rev-parse @:./dependencies/libstrophe)"
+        run: echo "lstrophesha=$(git rev-parse @:./dependencies/libstrophe)" >> $GITHUB_OUTPUT
 
       - name: Cache libstrophe
         id: cache-libstrophe
