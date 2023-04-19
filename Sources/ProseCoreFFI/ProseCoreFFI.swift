@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_prose_core_ffi_be33_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_prose_core_ffi_3ba6_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_prose_core_ffi_be33_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_prose_core_ffi_3ba6_rustbuffer_free(self, $0) }
     }
 }
 
@@ -371,20 +371,20 @@ public class AccountBookmarksClient: AccountBookmarksClientProtocol {
 
     public convenience init(bookmarksPath: PathBuf) {
         self.init(unsafeFromRawPointer: try! rustCall {
-            prose_core_ffi_be33_AccountBookmarksClient_new(
+            prose_core_ffi_3ba6_AccountBookmarksClient_new(
                 FfiConverterTypePathBuf.lower(bookmarksPath), $0
             )
         })
     }
 
     deinit {
-        try! rustCall { ffi_prose_core_ffi_be33_AccountBookmarksClient_object_free(pointer, $0) }
+        try! rustCall { ffi_prose_core_ffi_3ba6_AccountBookmarksClient_object_free(pointer, $0) }
     }
 
     public func loadBookmarks() throws -> [AccountBookmark] {
         return try FfiConverterSequenceTypeAccountBookmark.lift(
             rustCallWithError(FfiConverterTypeClientError.self) {
-                prose_core_ffi_be33_AccountBookmarksClient_load_bookmarks(self.pointer, $0)
+                prose_core_ffi_3ba6_AccountBookmarksClient_load_bookmarks(self.pointer, $0)
             }
         )
     }
@@ -392,7 +392,7 @@ public class AccountBookmarksClient: AccountBookmarksClientProtocol {
     public func addBookmark(jid: BareJid, selectBookmark: Bool) throws {
         try
             rustCallWithError(FfiConverterTypeClientError.self) {
-                prose_core_ffi_be33_AccountBookmarksClient_add_bookmark(self.pointer,
+                prose_core_ffi_3ba6_AccountBookmarksClient_add_bookmark(self.pointer,
                                                                         FfiConverterTypeBareJid.lower(jid),
                                                                         FfiConverterBool.lower(selectBookmark), $0)
             }
@@ -401,7 +401,7 @@ public class AccountBookmarksClient: AccountBookmarksClientProtocol {
     public func removeBookmark(jid: BareJid) throws {
         try
             rustCallWithError(FfiConverterTypeClientError.self) {
-                prose_core_ffi_be33_AccountBookmarksClient_remove_bookmark(self.pointer,
+                prose_core_ffi_3ba6_AccountBookmarksClient_remove_bookmark(self.pointer,
                                                                            FfiConverterTypeBareJid.lower(jid), $0)
             }
     }
@@ -409,7 +409,7 @@ public class AccountBookmarksClient: AccountBookmarksClientProtocol {
     public func selectBookmark(jid: BareJid) throws {
         try
             rustCallWithError(FfiConverterTypeClientError.self) {
-                prose_core_ffi_be33_AccountBookmarksClient_select_bookmark(self.pointer,
+                prose_core_ffi_3ba6_AccountBookmarksClient_select_bookmark(self.pointer,
                                                                            FfiConverterTypeBareJid.lower(jid), $0)
             }
     }
@@ -458,6 +458,7 @@ public protocol ClientProtocol {
     func disconnect() async throws
     func jid() -> FullJid
     func loadAvatar(from: BareJid) async throws -> PathBuf?
+    func loadComposingUsers(conversation: BareJid) async throws -> [BareJid]
     func loadContacts() async throws -> [Contact]
     func loadLatestMessages(from: BareJid, since: MessageId?, loadFromServer: Bool) async throws -> [Message]
     func loadMessagesBefore(from: BareJid, before: MessageId) async throws -> MessagesPage
@@ -466,8 +467,8 @@ public protocol ClientProtocol {
     func retractMessage(conversation: BareJid, id: MessageId) async throws
     func saveAvatar(imagePath: PathBuf) async throws
     func saveProfile(profile: UserProfile) async throws
-    func sendChatState(conversation: BareJid, chatState: ChatState) async throws
     func sendMessage(to: BareJid, body: String) async throws
+    func setUserIsComposing(conversation: BareJid, isComposing: Bool) async throws
     func toggleReactionToMessage(conversation: BareJid, id: MessageId, emoji: Emoji) async throws
     func updateMessage(conversation: BareJid, id: MessageId, body: String) async throws
 }
@@ -484,7 +485,7 @@ public class Client: ClientProtocol {
 
     public convenience init(jid: FullJid, cacheDir: String, delegate: ClientDelegate?) throws {
         try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeClientError.self) {
-            prose_core_ffi_be33_Client_new(
+            prose_core_ffi_3ba6_Client_new(
                 FfiConverterTypeFullJid.lower(jid),
                 FfiConverterString.lower(cacheDir),
                 FfiConverterOptionCallbackInterfaceClientDelegate.lower(delegate), $0
@@ -493,7 +494,7 @@ public class Client: ClientProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_prose_core_ffi_be33_Client_object_free(pointer, $0) }
+        try! rustCall { ffi_prose_core_ffi_3ba6_Client_object_free(pointer, $0) }
     }
 
     public func connect(password: String) async throws {
@@ -540,6 +541,19 @@ public class Client: ClientProtocol {
         return try await withCheckedThrowingContinuation { continuation in
             let env = Unmanaged.passRetained(_UniFFI_Client_LoadAvatar_Env(rustyFuture: future, continuation: continuation))
             _UniFFI_Client_LoadAvatar_waker(raw_env: env.toOpaque())
+        }
+    }
+
+    public func loadComposingUsers(conversation: BareJid) async throws -> [BareJid] {
+        let future = try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_load_composing_users_ae9e(self.pointer,
+                                                                             FfiConverterTypeBareJid.lower(conversation), $0)
+            }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let env = Unmanaged.passRetained(_UniFFI_Client_LoadComposingUsers_Env(rustyFuture: future, continuation: continuation))
+            _UniFFI_Client_LoadComposingUsers_waker(raw_env: env.toOpaque())
         }
     }
 
@@ -651,20 +665,6 @@ public class Client: ClientProtocol {
         }
     }
 
-    public func sendChatState(conversation: BareJid, chatState: ChatState) async throws {
-        let future = try
-            rustCallWithError(FfiConverterTypeClientError.self) {
-                _uniffi_prose_core_ffi_impl_Client_send_chat_state_971e(self.pointer,
-                                                                        FfiConverterTypeBareJid.lower(conversation),
-                                                                        FfiConverterTypeChatState.lower(chatState), $0)
-            }
-
-        return try await withCheckedThrowingContinuation { continuation in
-            let env = Unmanaged.passRetained(_UniFFI_Client_SendChatState_Env(rustyFuture: future, continuation: continuation))
-            _UniFFI_Client_SendChatState_waker(raw_env: env.toOpaque())
-        }
-    }
-
     public func sendMessage(to: BareJid, body: String) async throws {
         let future = try
             rustCallWithError(FfiConverterTypeClientError.self) {
@@ -676,6 +676,20 @@ public class Client: ClientProtocol {
         return try await withCheckedThrowingContinuation { continuation in
             let env = Unmanaged.passRetained(_UniFFI_Client_SendMessage_Env(rustyFuture: future, continuation: continuation))
             _UniFFI_Client_SendMessage_waker(raw_env: env.toOpaque())
+        }
+    }
+
+    public func setUserIsComposing(conversation: BareJid, isComposing: Bool) async throws {
+        let future = try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_set_user_is_composing_c2f7(self.pointer,
+                                                                              FfiConverterTypeBareJid.lower(conversation),
+                                                                              FfiConverterBool.lower(isComposing), $0)
+            }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let env = Unmanaged.passRetained(_UniFFI_Client_SetUserIsComposing_Env(rustyFuture: future, continuation: continuation))
+            _UniFFI_Client_SetUserIsComposing_waker(raw_env: env.toOpaque())
         }
     }
 
@@ -834,6 +848,51 @@ private func _UniFFI_Client_LoadAvatar_waker(raw_env: UnsafeMutableRawPointer?) 
 
             if isReady {
                 env_ref.continuation.resume(returning: try! FfiConverterOptionTypePathBuf.lift(polledResult.move()))
+                polledResult.deallocate()
+                env.release()
+            }
+        } catch {
+            env_ref.continuation.resume(throwing: error)
+            polledResult.deallocate()
+            env.release()
+        }
+    }
+}
+
+private class _UniFFI_Client_LoadComposingUsers_Env {
+    var rustFuture: OpaquePointer
+    var continuation: CheckedContinuation<[BareJid], Error>
+
+    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<[BareJid], Error>) {
+        rustFuture = rustyFuture
+        self.continuation = continuation
+    }
+
+    deinit {
+        try! rustCall {
+            _uniffi_prose_core_ffi_impl_Client_load_composing_users_ae9e_drop(self.rustFuture, $0)
+        }
+    }
+}
+
+private func _UniFFI_Client_LoadComposingUsers_waker(raw_env: UnsafeMutableRawPointer?) {
+    Task {
+        let env = Unmanaged<_UniFFI_Client_LoadComposingUsers_Env>.fromOpaque(raw_env!)
+        let env_ref = env.takeUnretainedValue()
+        let polledResult = UnsafeMutablePointer<RustBuffer>.allocate(capacity: 1)
+        do {
+            let isReady = try rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_load_composing_users_ae9e_poll(
+                    env_ref.rustFuture,
+                    _UniFFI_Client_LoadComposingUsers_waker,
+                    env.toOpaque(),
+                    polledResult,
+                    $0
+                )
+            }
+
+            if isReady {
+                env_ref.continuation.resume(returning: try! FfiConverterSequenceTypeBareJid.lift(polledResult.move()))
                 polledResult.deallocate()
                 env.release()
             }
@@ -1205,51 +1264,6 @@ private func _UniFFI_Client_SaveProfile_waker(raw_env: UnsafeMutableRawPointer?)
     }
 }
 
-private class _UniFFI_Client_SendChatState_Env {
-    var rustFuture: OpaquePointer
-    var continuation: CheckedContinuation<Void, Error>
-
-    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<Void, Error>) {
-        rustFuture = rustyFuture
-        self.continuation = continuation
-    }
-
-    deinit {
-        try! rustCall {
-            _uniffi_prose_core_ffi_impl_Client_send_chat_state_971e_drop(self.rustFuture, $0)
-        }
-    }
-}
-
-private func _UniFFI_Client_SendChatState_waker(raw_env: UnsafeMutableRawPointer?) {
-    Task {
-        let env = Unmanaged<_UniFFI_Client_SendChatState_Env>.fromOpaque(raw_env!)
-        let env_ref = env.takeUnretainedValue()
-        let polledResult = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: 0)
-        do {
-            let isReady = try rustCallWithError(FfiConverterTypeClientError.self) {
-                _uniffi_prose_core_ffi_impl_Client_send_chat_state_971e_poll(
-                    env_ref.rustFuture,
-                    _UniFFI_Client_SendChatState_waker,
-                    env.toOpaque(),
-                    polledResult,
-                    $0
-                )
-            }
-
-            if isReady {
-                env_ref.continuation.resume(returning: ())
-                polledResult.deallocate()
-                env.release()
-            }
-        } catch {
-            env_ref.continuation.resume(throwing: error)
-            polledResult.deallocate()
-            env.release()
-        }
-    }
-}
-
 private class _UniFFI_Client_SendMessage_Env {
     var rustFuture: OpaquePointer
     var continuation: CheckedContinuation<Void, Error>
@@ -1276,6 +1290,51 @@ private func _UniFFI_Client_SendMessage_waker(raw_env: UnsafeMutableRawPointer?)
                 _uniffi_prose_core_ffi_impl_Client_send_message_d23e_poll(
                     env_ref.rustFuture,
                     _UniFFI_Client_SendMessage_waker,
+                    env.toOpaque(),
+                    polledResult,
+                    $0
+                )
+            }
+
+            if isReady {
+                env_ref.continuation.resume(returning: ())
+                polledResult.deallocate()
+                env.release()
+            }
+        } catch {
+            env_ref.continuation.resume(throwing: error)
+            polledResult.deallocate()
+            env.release()
+        }
+    }
+}
+
+private class _UniFFI_Client_SetUserIsComposing_Env {
+    var rustFuture: OpaquePointer
+    var continuation: CheckedContinuation<Void, Error>
+
+    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<Void, Error>) {
+        rustFuture = rustyFuture
+        self.continuation = continuation
+    }
+
+    deinit {
+        try! rustCall {
+            _uniffi_prose_core_ffi_impl_Client_set_user_is_composing_c2f7_drop(self.rustFuture, $0)
+        }
+    }
+}
+
+private func _UniFFI_Client_SetUserIsComposing_waker(raw_env: UnsafeMutableRawPointer?) {
+    Task {
+        let env = Unmanaged<_UniFFI_Client_SetUserIsComposing_Env>.fromOpaque(raw_env!)
+        let env_ref = env.takeUnretainedValue()
+        let polledResult = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: 0)
+        do {
+            let isReady = try rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_set_user_is_composing_c2f7_poll(
+                    env_ref.rustFuture,
+                    _UniFFI_Client_SetUserIsComposing_waker,
                     env.toOpaque(),
                     polledResult,
                     $0
@@ -2082,67 +2141,8 @@ extension Availability: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-public enum ChatState {
-    case active
-    case composing
-    case gone
-    case inactive
-    case paused
-}
-
-public struct FfiConverterTypeChatState: FfiConverterRustBuffer {
-    typealias SwiftType = ChatState
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ChatState {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        case 1: return .active
-
-        case 2: return .composing
-
-        case 3: return .gone
-
-        case 4: return .inactive
-
-        case 5: return .paused
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: ChatState, into buf: inout [UInt8]) {
-        switch value {
-        case .active:
-            writeInt(&buf, Int32(1))
-
-        case .composing:
-            writeInt(&buf, Int32(2))
-
-        case .gone:
-            writeInt(&buf, Int32(3))
-
-        case .inactive:
-            writeInt(&buf, Int32(4))
-
-        case .paused:
-            writeInt(&buf, Int32(5))
-        }
-    }
-}
-
-public func FfiConverterTypeChatState_lift(_ buf: RustBuffer) throws -> ChatState {
-    return try FfiConverterTypeChatState.lift(buf)
-}
-
-public func FfiConverterTypeChatState_lower(_ value: ChatState) -> RustBuffer {
-    return FfiConverterTypeChatState.lower(value)
-}
-
-extension ChatState: Equatable, Hashable {}
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum ClientEvent {
+    case composingUsersChanged(conversation: BareJid)
     case connectionStatusChanged(event: ConnectionEvent)
     case contactChanged(jid: BareJid)
     case messagesAppended(conversation: BareJid, messageIds: [MessageId])
@@ -2156,25 +2156,29 @@ public struct FfiConverterTypeClientEvent: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClientEvent {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .connectionStatusChanged(
+        case 1: return try .composingUsersChanged(
+                conversation: FfiConverterTypeBareJid.read(from: &buf)
+            )
+
+        case 2: return try .connectionStatusChanged(
                 event: FfiConverterTypeConnectionEvent.read(from: &buf)
             )
 
-        case 2: return try .contactChanged(
+        case 3: return try .contactChanged(
                 jid: FfiConverterTypeBareJid.read(from: &buf)
             )
 
-        case 3: return try .messagesAppended(
+        case 4: return try .messagesAppended(
                 conversation: FfiConverterTypeBareJid.read(from: &buf),
                 messageIds: FfiConverterSequenceTypeMessageId.read(from: &buf)
             )
 
-        case 4: return try .messagesUpdated(
+        case 5: return try .messagesUpdated(
                 conversation: FfiConverterTypeBareJid.read(from: &buf),
                 messageIds: FfiConverterSequenceTypeMessageId.read(from: &buf)
             )
 
-        case 5: return try .messagesDeleted(
+        case 6: return try .messagesDeleted(
                 conversation: FfiConverterTypeBareJid.read(from: &buf),
                 messageIds: FfiConverterSequenceTypeMessageId.read(from: &buf)
             )
@@ -2185,26 +2189,30 @@ public struct FfiConverterTypeClientEvent: FfiConverterRustBuffer {
 
     public static func write(_ value: ClientEvent, into buf: inout [UInt8]) {
         switch value {
-        case let .connectionStatusChanged(event):
+        case let .composingUsersChanged(conversation):
             writeInt(&buf, Int32(1))
+            FfiConverterTypeBareJid.write(conversation, into: &buf)
+
+        case let .connectionStatusChanged(event):
+            writeInt(&buf, Int32(2))
             FfiConverterTypeConnectionEvent.write(event, into: &buf)
 
         case let .contactChanged(jid):
-            writeInt(&buf, Int32(2))
+            writeInt(&buf, Int32(3))
             FfiConverterTypeBareJid.write(jid, into: &buf)
 
         case let .messagesAppended(conversation, messageIds):
-            writeInt(&buf, Int32(3))
-            FfiConverterTypeBareJid.write(conversation, into: &buf)
-            FfiConverterSequenceTypeMessageId.write(messageIds, into: &buf)
-
-        case let .messagesUpdated(conversation, messageIds):
             writeInt(&buf, Int32(4))
             FfiConverterTypeBareJid.write(conversation, into: &buf)
             FfiConverterSequenceTypeMessageId.write(messageIds, into: &buf)
 
-        case let .messagesDeleted(conversation, messageIds):
+        case let .messagesUpdated(conversation, messageIds):
             writeInt(&buf, Int32(5))
+            FfiConverterTypeBareJid.write(conversation, into: &buf)
+            FfiConverterSequenceTypeMessageId.write(messageIds, into: &buf)
+
+        case let .messagesDeleted(conversation, messageIds):
+            writeInt(&buf, Int32(6))
             FfiConverterTypeBareJid.write(conversation, into: &buf)
             FfiConverterSequenceTypeMessageId.write(messageIds, into: &buf)
         }
@@ -2636,7 +2644,7 @@ private enum FfiConverterCallbackInterfaceClientDelegate {
     private static let initCallbackOnce: () = {
         // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_prose_core_ffi_be33_ClientDelegate_init_callback(foreignCallbackCallbackInterfaceClientDelegate, err)
+            ffi_prose_core_ffi_3ba6_ClientDelegate_init_callback(foreignCallbackCallbackInterfaceClientDelegate, err)
         }
     }()
 
@@ -2739,7 +2747,7 @@ private enum FfiConverterCallbackInterfaceLogger {
     private static let initCallbackOnce: () = {
         // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_prose_core_ffi_be33_Logger_init_callback(foreignCallbackCallbackInterfaceLogger, err)
+            ffi_prose_core_ffi_3ba6_Logger_init_callback(foreignCallbackCallbackInterfaceLogger, err)
         }
     }()
 
@@ -3278,7 +3286,7 @@ public func FfiConverterTypeUrl_lower(_ value: Url) -> RustBuffer {
 
 public func setLogger(logger: Logger, maxLevel: LogLevel) {
     try! rustCall {
-        prose_core_ffi_be33_set_logger(
+        prose_core_ffi_3ba6_set_logger(
             FfiConverterCallbackInterfaceLogger.lower(logger),
             FfiConverterTypeLogLevel.lower(maxLevel), $0
         )
