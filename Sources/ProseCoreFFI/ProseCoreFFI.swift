@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_prose_core_ffi_b073_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_prose_core_ffi_be33_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_prose_core_ffi_b073_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_prose_core_ffi_be33_rustbuffer_free(self, $0) }
     }
 }
 
@@ -352,6 +352,107 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
+public protocol AccountBookmarksClientProtocol {
+    func loadBookmarks() throws -> [AccountBookmark]
+    func addBookmark(jid: BareJid, selectBookmark: Bool) throws
+    func removeBookmark(jid: BareJid) throws
+    func selectBookmark(jid: BareJid) throws
+}
+
+public class AccountBookmarksClient: AccountBookmarksClientProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    public convenience init(bookmarksPath: PathBuf) {
+        self.init(unsafeFromRawPointer: try! rustCall {
+            prose_core_ffi_be33_AccountBookmarksClient_new(
+                FfiConverterTypePathBuf.lower(bookmarksPath), $0
+            )
+        })
+    }
+
+    deinit {
+        try! rustCall { ffi_prose_core_ffi_be33_AccountBookmarksClient_object_free(pointer, $0) }
+    }
+
+    public func loadBookmarks() throws -> [AccountBookmark] {
+        return try FfiConverterSequenceTypeAccountBookmark.lift(
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                prose_core_ffi_be33_AccountBookmarksClient_load_bookmarks(self.pointer, $0)
+            }
+        )
+    }
+
+    public func addBookmark(jid: BareJid, selectBookmark: Bool) throws {
+        try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                prose_core_ffi_be33_AccountBookmarksClient_add_bookmark(self.pointer,
+                                                                        FfiConverterTypeBareJid.lower(jid),
+                                                                        FfiConverterBool.lower(selectBookmark), $0)
+            }
+    }
+
+    public func removeBookmark(jid: BareJid) throws {
+        try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                prose_core_ffi_be33_AccountBookmarksClient_remove_bookmark(self.pointer,
+                                                                           FfiConverterTypeBareJid.lower(jid), $0)
+            }
+    }
+
+    public func selectBookmark(jid: BareJid) throws {
+        try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                prose_core_ffi_be33_AccountBookmarksClient_select_bookmark(self.pointer,
+                                                                           FfiConverterTypeBareJid.lower(jid), $0)
+            }
+    }
+}
+
+public struct FfiConverterTypeAccountBookmarksClient: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = AccountBookmarksClient
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AccountBookmarksClient {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: AccountBookmarksClient, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> AccountBookmarksClient {
+        return AccountBookmarksClient(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: AccountBookmarksClient) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeAccountBookmarksClient_lift(_ pointer: UnsafeMutableRawPointer) throws -> AccountBookmarksClient {
+    return try FfiConverterTypeAccountBookmarksClient.lift(pointer)
+}
+
+public func FfiConverterTypeAccountBookmarksClient_lower(_ value: AccountBookmarksClient) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeAccountBookmarksClient.lower(value)
+}
+
 public protocol ClientProtocol {
     func connect(password: String) async throws
     func disconnect() async throws
@@ -383,7 +484,7 @@ public class Client: ClientProtocol {
 
     public convenience init(jid: FullJid, cacheDir: String, delegate: ClientDelegate?) throws {
         try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeClientError.self) {
-            prose_core_ffi_b073_Client_new(
+            prose_core_ffi_be33_Client_new(
                 FfiConverterTypeFullJid.lower(jid),
                 FfiConverterString.lower(cacheDir),
                 FfiConverterOptionCallbackInterfaceClientDelegate.lower(delegate), $0
@@ -392,7 +493,7 @@ public class Client: ClientProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_prose_core_ffi_b073_Client_object_free(pointer, $0) }
+        try! rustCall { ffi_prose_core_ffi_be33_Client_object_free(pointer, $0) }
     }
 
     public func connect(password: String) async throws {
@@ -1320,6 +1421,57 @@ public func FfiConverterTypeClient_lift(_ pointer: UnsafeMutableRawPointer) thro
 
 public func FfiConverterTypeClient_lower(_ value: Client) -> UnsafeMutableRawPointer {
     return FfiConverterTypeClient.lower(value)
+}
+
+public struct AccountBookmark {
+    public var jid: BareJid
+    public var isSelected: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(jid: BareJid, isSelected: Bool) {
+        self.jid = jid
+        self.isSelected = isSelected
+    }
+}
+
+extension AccountBookmark: Equatable, Hashable {
+    public static func == (lhs: AccountBookmark, rhs: AccountBookmark) -> Bool {
+        if lhs.jid != rhs.jid {
+            return false
+        }
+        if lhs.isSelected != rhs.isSelected {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(jid)
+        hasher.combine(isSelected)
+    }
+}
+
+public struct FfiConverterTypeAccountBookmark: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AccountBookmark {
+        return try AccountBookmark(
+            jid: FfiConverterTypeBareJid.read(from: &buf),
+            isSelected: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: AccountBookmark, into buf: inout [UInt8]) {
+        FfiConverterTypeBareJid.write(value.jid, into: &buf)
+        FfiConverterBool.write(value.isSelected, into: &buf)
+    }
+}
+
+public func FfiConverterTypeAccountBookmark_lift(_ buf: RustBuffer) throws -> AccountBookmark {
+    return try FfiConverterTypeAccountBookmark.lift(buf)
+}
+
+public func FfiConverterTypeAccountBookmark_lower(_ value: AccountBookmark) -> RustBuffer {
+    return FfiConverterTypeAccountBookmark.lower(value)
 }
 
 public struct Address {
@@ -2484,7 +2636,7 @@ private enum FfiConverterCallbackInterfaceClientDelegate {
     private static let initCallbackOnce: () = {
         // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_prose_core_ffi_b073_ClientDelegate_init_callback(foreignCallbackCallbackInterfaceClientDelegate, err)
+            ffi_prose_core_ffi_be33_ClientDelegate_init_callback(foreignCallbackCallbackInterfaceClientDelegate, err)
         }
     }()
 
@@ -2587,7 +2739,7 @@ private enum FfiConverterCallbackInterfaceLogger {
     private static let initCallbackOnce: () = {
         // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_prose_core_ffi_b073_Logger_init_callback(foreignCallbackCallbackInterfaceLogger, err)
+            ffi_prose_core_ffi_be33_Logger_init_callback(foreignCallbackCallbackInterfaceLogger, err)
         }
     }()
 
@@ -2796,6 +2948,28 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             try seq.append(FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+private struct FfiConverterSequenceTypeAccountBookmark: FfiConverterRustBuffer {
+    typealias SwiftType = [AccountBookmark]
+
+    public static func write(_ value: [AccountBookmark], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeAccountBookmark.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [AccountBookmark] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [AccountBookmark]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeAccountBookmark.read(from: &buf))
         }
         return seq
     }
@@ -3104,7 +3278,7 @@ public func FfiConverterTypeUrl_lower(_ value: Url) -> RustBuffer {
 
 public func setLogger(logger: Logger, maxLevel: LogLevel) {
     try! rustCall {
-        prose_core_ffi_b073_set_logger(
+        prose_core_ffi_be33_set_logger(
             FfiConverterCallbackInterfaceLogger.lower(logger),
             FfiConverterTypeLogLevel.lower(maxLevel), $0
         )
