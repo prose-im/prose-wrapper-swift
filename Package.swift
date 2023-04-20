@@ -11,8 +11,8 @@ let package = Package(
     .target(name: "ProseCoreFFI", dependencies: ["ProseCoreFFIFFI"]),
     .binaryTarget(
       name: "ProseCoreFFIFFI",
-      url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/0.7.0/ProseCoreFFI.xcframework.zip",
-      checksum: "616db78b0c145cdabb1148feb0df7a2c830a73fa4e9a114f3e58138d1a500587"
+      url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/0.8.0/ProseCoreFFI.xcframework.zip",
+      checksum: "45642aca870ebb513dd0faffa16aab00209882174c860e40f0bcc32f58464f46"
     ),
   ]
 )
