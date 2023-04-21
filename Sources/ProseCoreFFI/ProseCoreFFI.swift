@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_prose_core_ffi_f58f_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_prose_core_ffi_d633_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_prose_core_ffi_f58f_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_prose_core_ffi_d633_rustbuffer_free(self, $0) }
     }
 }
 
@@ -371,20 +371,20 @@ public class AccountBookmarksClient: AccountBookmarksClientProtocol {
 
     public convenience init(bookmarksPath: PathBuf) {
         self.init(unsafeFromRawPointer: try! rustCall {
-            prose_core_ffi_f58f_AccountBookmarksClient_new(
+            prose_core_ffi_d633_AccountBookmarksClient_new(
                 FfiConverterTypePathBuf.lower(bookmarksPath), $0
             )
         })
     }
 
     deinit {
-        try! rustCall { ffi_prose_core_ffi_f58f_AccountBookmarksClient_object_free(pointer, $0) }
+        try! rustCall { ffi_prose_core_ffi_d633_AccountBookmarksClient_object_free(pointer, $0) }
     }
 
     public func loadBookmarks() throws -> [AccountBookmark] {
         return try FfiConverterSequenceTypeAccountBookmark.lift(
             rustCallWithError(FfiConverterTypeClientError.self) {
-                prose_core_ffi_f58f_AccountBookmarksClient_load_bookmarks(self.pointer, $0)
+                prose_core_ffi_d633_AccountBookmarksClient_load_bookmarks(self.pointer, $0)
             }
         )
     }
@@ -392,7 +392,7 @@ public class AccountBookmarksClient: AccountBookmarksClientProtocol {
     public func addBookmark(jid: BareJid, selectBookmark: Bool) throws {
         try
             rustCallWithError(FfiConverterTypeClientError.self) {
-                prose_core_ffi_f58f_AccountBookmarksClient_add_bookmark(self.pointer,
+                prose_core_ffi_d633_AccountBookmarksClient_add_bookmark(self.pointer,
                                                                         FfiConverterTypeBareJid.lower(jid),
                                                                         FfiConverterBool.lower(selectBookmark), $0)
             }
@@ -401,7 +401,7 @@ public class AccountBookmarksClient: AccountBookmarksClientProtocol {
     public func removeBookmark(jid: BareJid) throws {
         try
             rustCallWithError(FfiConverterTypeClientError.self) {
-                prose_core_ffi_f58f_AccountBookmarksClient_remove_bookmark(self.pointer,
+                prose_core_ffi_d633_AccountBookmarksClient_remove_bookmark(self.pointer,
                                                                            FfiConverterTypeBareJid.lower(jid), $0)
             }
     }
@@ -409,7 +409,7 @@ public class AccountBookmarksClient: AccountBookmarksClientProtocol {
     public func selectBookmark(jid: BareJid) throws {
         try
             rustCallWithError(FfiConverterTypeClientError.self) {
-                prose_core_ffi_f58f_AccountBookmarksClient_select_bookmark(self.pointer,
+                prose_core_ffi_d633_AccountBookmarksClient_select_bookmark(self.pointer,
                                                                            FfiConverterTypeBareJid.lower(jid), $0)
             }
     }
@@ -457,6 +457,7 @@ public protocol ClientProtocol {
     func connect(password: String) async throws
     func disconnect() async throws
     func jid() -> FullJid
+    func loadAccountSettings() async throws -> AccountSettings
     func loadAvatar(from: BareJid, cachePolicy: CachePolicy) async throws -> PathBuf?
     func loadComposingUsers(conversation: BareJid) async throws -> [BareJid]
     func loadContacts(cachePolicy: CachePolicy) async throws -> [Contact]
@@ -466,10 +467,12 @@ public protocol ClientProtocol {
     func loadMessagesWithIds(conversation: BareJid, ids: [MessageId]) async throws -> [Message]
     func loadProfile(from: BareJid, cachePolicy: CachePolicy) async throws -> UserProfile
     func retractMessage(conversation: BareJid, id: MessageId) async throws
+    func saveAccountSettings(settings: AccountSettings) async throws
     func saveAvatar(imagePath: PathBuf) async throws
     func saveDraft(conversation: BareJid, text: String?) async throws
     func saveProfile(profile: UserProfile) async throws
     func sendMessage(to: BareJid, body: String) async throws
+    func setAvailability(availability: Availability, status: String?) async throws
     func setUserIsComposing(conversation: BareJid, isComposing: Bool) async throws
     func toggleReactionToMessage(conversation: BareJid, id: MessageId, emoji: Emoji) async throws
     func updateMessage(conversation: BareJid, id: MessageId, body: String) async throws
@@ -487,7 +490,7 @@ public class Client: ClientProtocol {
 
     public convenience init(jid: FullJid, cacheDir: String, delegate: ClientDelegate?) throws {
         try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeClientError.self) {
-            prose_core_ffi_f58f_Client_new(
+            prose_core_ffi_d633_Client_new(
                 FfiConverterTypeFullJid.lower(jid),
                 FfiConverterString.lower(cacheDir),
                 FfiConverterOptionCallbackInterfaceClientDelegate.lower(delegate), $0
@@ -496,7 +499,7 @@ public class Client: ClientProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_prose_core_ffi_f58f_Client_object_free(pointer, $0) }
+        try! rustCall { ffi_prose_core_ffi_d633_Client_object_free(pointer, $0) }
     }
 
     public func connect(password: String) async throws {
@@ -531,6 +534,18 @@ public class Client: ClientProtocol {
                     _uniffi_prose_core_ffi_impl_Client_jid_5c1a(self.pointer, $0)
                 }
         )
+    }
+
+    public func loadAccountSettings() async throws -> AccountSettings {
+        let future = try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_load_account_settings_bbe0(self.pointer, $0)
+            }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let env = Unmanaged.passRetained(_UniFFI_Client_LoadAccountSettings_Env(rustyFuture: future, continuation: continuation))
+            _UniFFI_Client_LoadAccountSettings_waker(raw_env: env.toOpaque())
+        }
     }
 
     public func loadAvatar(from: BareJid, cachePolicy: CachePolicy) async throws -> PathBuf? {
@@ -657,6 +672,19 @@ public class Client: ClientProtocol {
         }
     }
 
+    public func saveAccountSettings(settings: AccountSettings) async throws {
+        let future = try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_save_account_settings_fa5d(self.pointer,
+                                                                              FfiConverterTypeAccountSettings.lower(settings), $0)
+            }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let env = Unmanaged.passRetained(_UniFFI_Client_SaveAccountSettings_Env(rustyFuture: future, continuation: continuation))
+            _UniFFI_Client_SaveAccountSettings_waker(raw_env: env.toOpaque())
+        }
+    }
+
     public func saveAvatar(imagePath: PathBuf) async throws {
         let future = try
             rustCallWithError(FfiConverterTypeClientError.self) {
@@ -708,6 +736,20 @@ public class Client: ClientProtocol {
         return try await withCheckedThrowingContinuation { continuation in
             let env = Unmanaged.passRetained(_UniFFI_Client_SendMessage_Env(rustyFuture: future, continuation: continuation))
             _UniFFI_Client_SendMessage_waker(raw_env: env.toOpaque())
+        }
+    }
+
+    public func setAvailability(availability: Availability, status: String?) async throws {
+        let future = try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_set_availability_e569(self.pointer,
+                                                                         FfiConverterTypeAvailability.lower(availability),
+                                                                         FfiConverterOptionString.lower(status), $0)
+            }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let env = Unmanaged.passRetained(_UniFFI_Client_SetAvailability_Env(rustyFuture: future, continuation: continuation))
+            _UniFFI_Client_SetAvailability_waker(raw_env: env.toOpaque())
         }
     }
 
@@ -835,6 +877,51 @@ private func _UniFFI_Client_Disconnect_waker(raw_env: UnsafeMutableRawPointer?) 
 
             if isReady {
                 env_ref.continuation.resume(returning: ())
+                polledResult.deallocate()
+                env.release()
+            }
+        } catch {
+            env_ref.continuation.resume(throwing: error)
+            polledResult.deallocate()
+            env.release()
+        }
+    }
+}
+
+private class _UniFFI_Client_LoadAccountSettings_Env {
+    var rustFuture: OpaquePointer
+    var continuation: CheckedContinuation<AccountSettings, Error>
+
+    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<AccountSettings, Error>) {
+        rustFuture = rustyFuture
+        self.continuation = continuation
+    }
+
+    deinit {
+        try! rustCall {
+            _uniffi_prose_core_ffi_impl_Client_load_account_settings_bbe0_drop(self.rustFuture, $0)
+        }
+    }
+}
+
+private func _UniFFI_Client_LoadAccountSettings_waker(raw_env: UnsafeMutableRawPointer?) {
+    Task {
+        let env = Unmanaged<_UniFFI_Client_LoadAccountSettings_Env>.fromOpaque(raw_env!)
+        let env_ref = env.takeUnretainedValue()
+        let polledResult = UnsafeMutablePointer<RustBuffer>.allocate(capacity: 1)
+        do {
+            let isReady = try rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_load_account_settings_bbe0_poll(
+                    env_ref.rustFuture,
+                    _UniFFI_Client_LoadAccountSettings_waker,
+                    env.toOpaque(),
+                    polledResult,
+                    $0
+                )
+            }
+
+            if isReady {
+                env_ref.continuation.resume(returning: try! FfiConverterTypeAccountSettings.lift(polledResult.move()))
                 polledResult.deallocate()
                 env.release()
             }
@@ -1251,6 +1338,51 @@ private func _UniFFI_Client_RetractMessage_waker(raw_env: UnsafeMutableRawPointe
     }
 }
 
+private class _UniFFI_Client_SaveAccountSettings_Env {
+    var rustFuture: OpaquePointer
+    var continuation: CheckedContinuation<Void, Error>
+
+    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<Void, Error>) {
+        rustFuture = rustyFuture
+        self.continuation = continuation
+    }
+
+    deinit {
+        try! rustCall {
+            _uniffi_prose_core_ffi_impl_Client_save_account_settings_fa5d_drop(self.rustFuture, $0)
+        }
+    }
+}
+
+private func _UniFFI_Client_SaveAccountSettings_waker(raw_env: UnsafeMutableRawPointer?) {
+    Task {
+        let env = Unmanaged<_UniFFI_Client_SaveAccountSettings_Env>.fromOpaque(raw_env!)
+        let env_ref = env.takeUnretainedValue()
+        let polledResult = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: 0)
+        do {
+            let isReady = try rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_save_account_settings_fa5d_poll(
+                    env_ref.rustFuture,
+                    _UniFFI_Client_SaveAccountSettings_waker,
+                    env.toOpaque(),
+                    polledResult,
+                    $0
+                )
+            }
+
+            if isReady {
+                env_ref.continuation.resume(returning: ())
+                polledResult.deallocate()
+                env.release()
+            }
+        } catch {
+            env_ref.continuation.resume(throwing: error)
+            polledResult.deallocate()
+            env.release()
+        }
+    }
+}
+
 private class _UniFFI_Client_SaveAvatar_Env {
     var rustFuture: OpaquePointer
     var continuation: CheckedContinuation<Void, Error>
@@ -1412,6 +1544,51 @@ private func _UniFFI_Client_SendMessage_waker(raw_env: UnsafeMutableRawPointer?)
                 _uniffi_prose_core_ffi_impl_Client_send_message_d23e_poll(
                     env_ref.rustFuture,
                     _UniFFI_Client_SendMessage_waker,
+                    env.toOpaque(),
+                    polledResult,
+                    $0
+                )
+            }
+
+            if isReady {
+                env_ref.continuation.resume(returning: ())
+                polledResult.deallocate()
+                env.release()
+            }
+        } catch {
+            env_ref.continuation.resume(throwing: error)
+            polledResult.deallocate()
+            env.release()
+        }
+    }
+}
+
+private class _UniFFI_Client_SetAvailability_Env {
+    var rustFuture: OpaquePointer
+    var continuation: CheckedContinuation<Void, Error>
+
+    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<Void, Error>) {
+        rustFuture = rustyFuture
+        self.continuation = continuation
+    }
+
+    deinit {
+        try! rustCall {
+            _uniffi_prose_core_ffi_impl_Client_set_availability_e569_drop(self.rustFuture, $0)
+        }
+    }
+}
+
+private func _UniFFI_Client_SetAvailability_waker(raw_env: UnsafeMutableRawPointer?) {
+    Task {
+        let env = Unmanaged<_UniFFI_Client_SetAvailability_Env>.fromOpaque(raw_env!)
+        let env_ref = env.takeUnretainedValue()
+        let polledResult = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: 0)
+        do {
+            let isReady = try rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_set_availability_e569_poll(
+                    env_ref.rustFuture,
+                    _UniFFI_Client_SetAvailability_waker,
                     env.toOpaque(),
                     polledResult,
                     $0
@@ -1653,6 +1830,49 @@ public func FfiConverterTypeAccountBookmark_lift(_ buf: RustBuffer) throws -> Ac
 
 public func FfiConverterTypeAccountBookmark_lower(_ value: AccountBookmark) -> RustBuffer {
     return FfiConverterTypeAccountBookmark.lower(value)
+}
+
+public struct AccountSettings {
+    public var availability: Availability
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(availability: Availability) {
+        self.availability = availability
+    }
+}
+
+extension AccountSettings: Equatable, Hashable {
+    public static func == (lhs: AccountSettings, rhs: AccountSettings) -> Bool {
+        if lhs.availability != rhs.availability {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(availability)
+    }
+}
+
+public struct FfiConverterTypeAccountSettings: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AccountSettings {
+        return try AccountSettings(
+            availability: FfiConverterTypeAvailability.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: AccountSettings, into buf: inout [UInt8]) {
+        FfiConverterTypeAvailability.write(value.availability, into: &buf)
+    }
+}
+
+public func FfiConverterTypeAccountSettings_lift(_ buf: RustBuffer) throws -> AccountSettings {
+    return try FfiConverterTypeAccountSettings.lift(buf)
+}
+
+public func FfiConverterTypeAccountSettings_lower(_ value: AccountSettings) -> RustBuffer {
+    return FfiConverterTypeAccountSettings.lower(value)
 }
 
 public struct Address {
@@ -2814,7 +3034,7 @@ private enum FfiConverterCallbackInterfaceClientDelegate {
     private static let initCallbackOnce: () = {
         // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_prose_core_ffi_f58f_ClientDelegate_init_callback(foreignCallbackCallbackInterfaceClientDelegate, err)
+            ffi_prose_core_ffi_d633_ClientDelegate_init_callback(foreignCallbackCallbackInterfaceClientDelegate, err)
         }
     }()
 
@@ -2917,7 +3137,7 @@ private enum FfiConverterCallbackInterfaceLogger {
     private static let initCallbackOnce: () = {
         // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_prose_core_ffi_f58f_Logger_init_callback(foreignCallbackCallbackInterfaceLogger, err)
+            ffi_prose_core_ffi_d633_Logger_init_callback(foreignCallbackCallbackInterfaceLogger, err)
         }
     }()
 
@@ -3456,7 +3676,7 @@ public func FfiConverterTypeUrl_lower(_ value: Url) -> RustBuffer {
 
 public func setLogger(logger: Logger, maxLevel: LogLevel) {
     try! rustCall {
-        prose_core_ffi_f58f_set_logger(
+        prose_core_ffi_d633_set_logger(
             FfiConverterCallbackInterfaceLogger.lower(logger),
             FfiConverterTypeLogLevel.lower(maxLevel), $0
         )
