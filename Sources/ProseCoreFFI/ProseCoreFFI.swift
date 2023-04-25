@@ -455,6 +455,7 @@ public func FfiConverterTypeAccountBookmarksClient_lower(_ value: AccountBookmar
 
 public protocol ClientProtocol {
     func connect(password: String) async throws
+    func deleteProfile() async throws
     func disconnect() async throws
     func jid() -> FullJid
     func loadAccountSettings() async throws -> AccountSettings
@@ -465,7 +466,7 @@ public protocol ClientProtocol {
     func loadLatestMessages(from: BareJid, since: MessageId?, loadFromServer: Bool) async throws -> [Message]
     func loadMessagesBefore(from: BareJid, before: MessageId) async throws -> MessagesPage
     func loadMessagesWithIds(conversation: BareJid, ids: [MessageId]) async throws -> [Message]
-    func loadProfile(from: BareJid, cachePolicy: CachePolicy) async throws -> UserProfile
+    func loadProfile(from: BareJid, cachePolicy: CachePolicy) async throws -> UserProfile?
     func retractMessage(conversation: BareJid, id: MessageId) async throws
     func saveAccountSettings(settings: AccountSettings) async throws
     func saveAvatar(imagePath: PathBuf) async throws
@@ -512,6 +513,18 @@ public class Client: ClientProtocol {
         return try await withCheckedThrowingContinuation { continuation in
             let env = Unmanaged.passRetained(_UniFFI_Client_Connect_Env(rustyFuture: future, continuation: continuation))
             _UniFFI_Client_Connect_waker(raw_env: env.toOpaque())
+        }
+    }
+
+    public func deleteProfile() async throws {
+        let future = try
+            rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_delete_profile_4021(self.pointer, $0)
+            }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let env = Unmanaged.passRetained(_UniFFI_Client_DeleteProfile_Env(rustyFuture: future, continuation: continuation))
+            _UniFFI_Client_DeleteProfile_waker(raw_env: env.toOpaque())
         }
     }
 
@@ -644,10 +657,10 @@ public class Client: ClientProtocol {
         }
     }
 
-    public func loadProfile(from: BareJid, cachePolicy: CachePolicy) async throws -> UserProfile {
+    public func loadProfile(from: BareJid, cachePolicy: CachePolicy) async throws -> UserProfile? {
         let future = try
             rustCallWithError(FfiConverterTypeClientError.self) {
-                _uniffi_prose_core_ffi_impl_Client_load_profile_420c(self.pointer,
+                _uniffi_prose_core_ffi_impl_Client_load_profile_4d8b(self.pointer,
                                                                      FfiConverterTypeBareJid.lower(from),
                                                                      FfiConverterTypeCachePolicy.lower(cachePolicy), $0)
             }
@@ -824,6 +837,51 @@ private func _UniFFI_Client_Connect_waker(raw_env: UnsafeMutableRawPointer?) {
                 _uniffi_prose_core_ffi_impl_Client_connect_5f8b_poll(
                     env_ref.rustFuture,
                     _UniFFI_Client_Connect_waker,
+                    env.toOpaque(),
+                    polledResult,
+                    $0
+                )
+            }
+
+            if isReady {
+                env_ref.continuation.resume(returning: ())
+                polledResult.deallocate()
+                env.release()
+            }
+        } catch {
+            env_ref.continuation.resume(throwing: error)
+            polledResult.deallocate()
+            env.release()
+        }
+    }
+}
+
+private class _UniFFI_Client_DeleteProfile_Env {
+    var rustFuture: OpaquePointer
+    var continuation: CheckedContinuation<Void, Error>
+
+    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<Void, Error>) {
+        rustFuture = rustyFuture
+        self.continuation = continuation
+    }
+
+    deinit {
+        try! rustCall {
+            _uniffi_prose_core_ffi_impl_Client_delete_profile_4021_drop(self.rustFuture, $0)
+        }
+    }
+}
+
+private func _UniFFI_Client_DeleteProfile_waker(raw_env: UnsafeMutableRawPointer?) {
+    Task {
+        let env = Unmanaged<_UniFFI_Client_DeleteProfile_Env>.fromOpaque(raw_env!)
+        let env_ref = env.takeUnretainedValue()
+        let polledResult = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: 0)
+        do {
+            let isReady = try rustCallWithError(FfiConverterTypeClientError.self) {
+                _uniffi_prose_core_ffi_impl_Client_delete_profile_4021_poll(
+                    env_ref.rustFuture,
+                    _UniFFI_Client_DeleteProfile_waker,
                     env.toOpaque(),
                     polledResult,
                     $0
@@ -1250,16 +1308,16 @@ private func _UniFFI_Client_LoadMessagesWithIds_waker(raw_env: UnsafeMutableRawP
 
 private class _UniFFI_Client_LoadProfile_Env {
     var rustFuture: OpaquePointer
-    var continuation: CheckedContinuation<UserProfile, Error>
+    var continuation: CheckedContinuation<UserProfile?, Error>
 
-    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<UserProfile, Error>) {
+    init(rustyFuture: OpaquePointer, continuation: CheckedContinuation<UserProfile?, Error>) {
         rustFuture = rustyFuture
         self.continuation = continuation
     }
 
     deinit {
         try! rustCall {
-            _uniffi_prose_core_ffi_impl_Client_load_profile_420c_drop(self.rustFuture, $0)
+            _uniffi_prose_core_ffi_impl_Client_load_profile_4d8b_drop(self.rustFuture, $0)
         }
     }
 }
@@ -1271,7 +1329,7 @@ private func _UniFFI_Client_LoadProfile_waker(raw_env: UnsafeMutableRawPointer?)
         let polledResult = UnsafeMutablePointer<RustBuffer>.allocate(capacity: 1)
         do {
             let isReady = try rustCallWithError(FfiConverterTypeClientError.self) {
-                _uniffi_prose_core_ffi_impl_Client_load_profile_420c_poll(
+                _uniffi_prose_core_ffi_impl_Client_load_profile_4d8b_poll(
                     env_ref.rustFuture,
                     _UniFFI_Client_LoadProfile_waker,
                     env.toOpaque(),
@@ -1281,7 +1339,7 @@ private func _UniFFI_Client_LoadProfile_waker(raw_env: UnsafeMutableRawPointer?)
             }
 
             if isReady {
-                env_ref.continuation.resume(returning: try! FfiConverterTypeUserProfile.lift(polledResult.move()))
+                env_ref.continuation.resume(returning: try! FfiConverterOptionTypeUserProfile.lift(polledResult.move()))
                 polledResult.deallocate()
                 env.release()
             }
@@ -3219,6 +3277,27 @@ private struct FfiConverterOptionTypeAddress: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeAddress.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+private struct FfiConverterOptionTypeUserProfile: FfiConverterRustBuffer {
+    typealias SwiftType = UserProfile?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeUserProfile.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeUserProfile.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
