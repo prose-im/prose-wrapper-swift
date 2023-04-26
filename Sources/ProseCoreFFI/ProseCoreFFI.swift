@@ -454,7 +454,7 @@ public func FfiConverterTypeAccountBookmarksClient_lower(_ value: AccountBookmar
 }
 
 public protocol ClientProtocol {
-    func connect(password: String) async throws
+    func connect(password: String, availability: Availability, status: String?) async throws
     func deleteProfile() async throws
     func disconnect() async throws
     func jid() -> FullJid
@@ -503,11 +503,13 @@ public class Client: ClientProtocol {
         try! rustCall { ffi_prose_core_ffi_d633_Client_object_free(pointer, $0) }
     }
 
-    public func connect(password: String) async throws {
+    public func connect(password: String, availability: Availability, status: String?) async throws {
         let future = try
             rustCallWithError(FfiConverterTypeConnectionError.self) {
-                _uniffi_prose_core_ffi_impl_Client_connect_5f8b(self.pointer,
-                                                                FfiConverterString.lower(password), $0)
+                _uniffi_prose_core_ffi_impl_Client_connect_654e(self.pointer,
+                                                                FfiConverterString.lower(password),
+                                                                FfiConverterTypeAvailability.lower(availability),
+                                                                FfiConverterOptionString.lower(status), $0)
             }
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -822,7 +824,7 @@ private class _UniFFI_Client_Connect_Env {
 
     deinit {
         try! rustCall {
-            _uniffi_prose_core_ffi_impl_Client_connect_5f8b_drop(self.rustFuture, $0)
+            _uniffi_prose_core_ffi_impl_Client_connect_654e_drop(self.rustFuture, $0)
         }
     }
 }
@@ -834,7 +836,7 @@ private func _UniFFI_Client_Connect_waker(raw_env: UnsafeMutableRawPointer?) {
         let polledResult = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: 0)
         do {
             let isReady = try rustCallWithError(FfiConverterTypeConnectionError.self) {
-                _uniffi_prose_core_ffi_impl_Client_connect_5f8b_poll(
+                _uniffi_prose_core_ffi_impl_Client_connect_654e_poll(
                     env_ref.rustFuture,
                     _UniFFI_Client_Connect_waker,
                     env.toOpaque(),
