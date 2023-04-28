@@ -3732,7 +3732,7 @@ public struct FfiConverterTypeUrl: FfiConverter {
     }
 
     public static func write(_ value: Url, into buf: inout [UInt8]) {
-        let builtinValue = value.path
+        let builtinValue = value.absoluteString
         return FfiConverterString.write(builtinValue, into: &buf)
     }
 
@@ -3742,7 +3742,7 @@ public struct FfiConverterTypeUrl: FfiConverter {
     }
 
     public static func lower(_ value: Url) -> RustBuffer {
-        let builtinValue = value.path
+        let builtinValue = value.absoluteString
         return FfiConverterString.lower(builtinValue)
     }
 }
