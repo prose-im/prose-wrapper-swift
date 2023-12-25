@@ -132,6 +132,7 @@ generate_swift_package() {
   cp "${interface_tmp_dir}/${CORE_LIB_MODULE_NAME}.swift" "${SPM_BUILD_FOLDER}/${SWIFT_LIB_NAME}/Sources/${SWIFT_LIB_NAME}"
   cp "${SOURCES_FOLDER}/${SWIFT_LIB_NAME}/Emoji.swift" "${SPM_BUILD_FOLDER}/${SWIFT_LIB_NAME}/Sources/${SWIFT_LIB_NAME}"
   cp "${SOURCES_FOLDER}/${SWIFT_LIB_NAME}/MessageId.swift" "${SPM_BUILD_FOLDER}/${SWIFT_LIB_NAME}/Sources/${SWIFT_LIB_NAME}"
+  cp "${SOURCES_FOLDER}/${SWIFT_LIB_NAME}/Errors+Description.swift" "${SPM_BUILD_FOLDER}/${SWIFT_LIB_NAME}/Sources/${SWIFT_LIB_NAME}"
   
   xcrun xcodebuild "${xcodebuild_args[@]}"
   
