@@ -1,6 +1,6 @@
 # prose-wrapper-swift
 
-[![Build](https://github.com/prose-im/prose-wrapper-swift/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/prose-im/prose-wrapper-swift/actions/workflows/build.yml)
+[![Build](https://github.com/prose-im/prose-wrapper-swift/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/prose-im/prose-wrapper-swift/actions/workflows/build.yml) [![GitHub Release](https://img.shields.io/github/v/release/prose-im/prose-wrapper-swift.svg)](https://github.com/prose-im/prose-wrapper-swift/releases)
 
 **Prose wrappers for Swift.**
 
