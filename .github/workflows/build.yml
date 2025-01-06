@@ -53,7 +53,7 @@ jobs:
 
       - name: Cache libstrophe
         id: cache-libstrophe
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: Build/libstrophe
           key: libstrophe-${{ steps.lstrophesha.outputs.lstrophesha }}
