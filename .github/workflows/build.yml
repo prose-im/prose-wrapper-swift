@@ -1,70 +1,165 @@
-on: [workflow_dispatch]
+name: Build and Release ProseSDK
 
-name: Build
+on:
+  workflow_dispatch:
+    inputs:
+      core_client_ref:
+        description: 'prose-core-client branch/tag to build from'
+        required: false
+        default: 'master'
+        type: string
+
+env:
+  CORE_CLIENT_REPO: prose-im/prose-core-client
+  WRAPPER_REPO: prose-im/prose-wrapper-swift
 
 jobs:
-  release-number:
-    name: Check if release already exists
-    runs-on: ubuntu-latest
-    outputs:
-      ok: ${{ steps.release-number.outputs.ok }}
+  build-and-release:
+    runs-on: macos-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout wrapper repository
         uses: actions/checkout@v4
         with:
-          submodules: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: wrapper
 
-      - name: Get prose-core-client submodule SHA and set ok flag if release does not exist.
-        id: release-number
-        run: scripts/check-release.sh
+      - name: Checkout core client repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.CORE_CLIENT_REPO }}
+          ref: ${{ github.event.inputs.core_client_ref || 'master' }}
+          path: core-client
+
+      - name: Install system dependencies
+        run: |
+          # Required by libsignal
+          brew install protobuf
+
+      - name: Setup Rust
+        run: |
+          # Navigate to core-client directory where rust-toolchain.toml exists
+          cd core-client
+
+          # This will automatically install the toolchain specified in rust-toolchain.toml
+          # and then add targets to that toolchain
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin x86_64-apple-ios aarch64-apple-ios-sim aarch64-apple-ios
+
+          # Install bindgen-cli which is required by aws-lc-sys
+          cargo install --force --locked bindgen-cli
+
+          echo "Active toolchain:"
+          rustup show active-toolchain
+          echo "Installed Apple targets:"
+          rustup target list --installed | grep apple
+
+      - name: Extract version from Cargo.toml
+        id: version
+        run: |
+          VERSION=$(grep -m1 '^version = ' core-client/bindings/prose-sdk-ffi/Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          cd wrapper
+          if gh release view "v${{ steps.version.outputs.version }}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release v${{ steps.version.outputs.version }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release v${{ steps.version.outputs.version }} does not exist"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build:
-    name: Build Swift Package
-    needs:
-      - release-number
-    if: ${{ needs.release-number.outputs.ok == 'true' }}
-    runs-on: macos-12
+      - name: Exit if release exists
+        if: steps.check_release.outputs.exists == 'true'
+        run: |
+          echo "Release v${{ steps.version.outputs.version }} already exists. Exiting."
+          exit 0
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+      - name: Build XCFramework
+        run: |
+          cd core-client
+          cargo xtask swift build
 
-      - name: Fetch dependencies
-        run: scripts/fetch-dependencies.sh
+      - name: Copy built framework to wrapper repo
+        run: |
+          cp -r core-client/bindings/prose-sdk-ffi/ProseSDK/* wrapper/
 
-      - name: Install Automake
-        run: brew install automake
+      - name: Create release archive
+        run: |
+          cd wrapper
+          zip -r -y "ProseSDK-${{ steps.version.outputs.version }}.zip" ProseCore.xcframework
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+      - name: Calculate checksum
+        id: checksum
+        run: |
+          cd wrapper
+          CHECKSUM=$(swift package compute-checksum "ProseSDK-${{ steps.version.outputs.version }}.zip")
+          echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+          echo "Checksum: $CHECKSUM"
 
-      - name: Install Rust targets
-        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin x86_64-apple-ios aarch64-apple-ios-sim aarch64-apple-ios
+      - name: Update Package.swift
+        run: |
+          cd wrapper
+          cat > Package.swift << 'EOF'
+          // swift-tools-version:5.5
+          // The swift-tools-version declares the minimum version of Swift required to build this package.
+          // Swift Package: ProseSDK
+          import PackageDescription
 
-      - name: Get libstrophe submodule SHA
-        id: lstrophesha
-        run: echo "lstrophesha=$(git rev-parse @:./dependencies/libstrophe)" >> $GITHUB_OUTPUT
+          let package = Package(
+              name: "ProseSDK",
+              platforms: [
+                  .iOS(.v13),
+                  .macOS(.v10_15)
+              ],
+              products: [
+                  .library(
+                      name: "ProseSDK",
+                      targets: ["ProseSDK"]
+                  )
+              ],
+              dependencies: [ ],
+              targets: [
+                  .binaryTarget(
+                      name: "ProseCore",
+                      url: "https://github.com/${{ env.WRAPPER_REPO }}/releases/download/v${{ steps.version.outputs.version }}/ProseSDK-${{ steps.version.outputs.version }}.zip",
+                      checksum: "${{ steps.checksum.outputs.checksum }}"
+                  ),
+                  .target(
+                      name: "ProseSDK",
+                      dependencies: [
+                          .target(name: "ProseCore")
+                      ]
+                  ),
+              ]
+          )
+          EOF
 
-      - name: Cache libstrophe
-        id: cache-libstrophe
-        uses: actions/cache@v4
-        with:
-          path: Build/libstrophe
-          key: libstrophe-${{ steps.lstrophesha.outputs.lstrophesha }}
-
-      - name: Build libstrophe
-        run: scripts/build-libstrophe.sh
-
-      - name: Build core client
-        run: scripts/build-core-client.sh
+      - name: Commit updated Package.swift and Sources
+        run: |
+          cd wrapper
+          git add Package.swift Sources/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update Package.swift and Sources for v${{ steps.version.outputs.version }}"
+            git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release
-        run: scripts/create-github-release.sh
+        id: create_release
+        run: |
+          cd wrapper
+          gh release create "v${{ steps.version.outputs.version }}" \
+            "ProseSDK-${{ steps.version.outputs.version }}.zip" \
+            --title "ProseSDK v${{ steps.version.outputs.version }}" \
+            --notes "ProseSDK release v${{ steps.version.outputs.version }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
