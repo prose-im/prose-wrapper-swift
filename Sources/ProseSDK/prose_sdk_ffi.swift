@@ -1006,6 +1006,8 @@ public protocol ClientProtocol: AnyObject, Sendable {
     
     func disconnect() async throws 
     
+    func enableLogging(minLevel: String) 
+    
     func findPublicChannelByName(name: String) async throws  -> RoomId?
     
     /**
@@ -1426,6 +1428,13 @@ open func disconnect()async throws   {
             liftFunc: { $0 },
             errorHandler: FfiConverterTypeClientError_lift
         )
+}
+    
+open func enableLogging(minLevel: String)  {try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_client_enable_logging(self.uniffiClonePointer(),
+        FfiConverterString.lower(minLevel),$0
+    )
+}
 }
     
 open func findPublicChannelByName(name: String)async throws  -> RoomId?  {
@@ -5459,17 +5468,13 @@ public func FfiConverterTypeAttachment_lower(_ value: Attachment) -> RustBuffer 
 
 
 public struct ClientConfig {
-    public var loggingEnabled: Bool
-    public var loggingMinLevel: String
     public var clientName: String
     public var clientVersion: String
     public var clientOs: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(loggingEnabled: Bool = false, loggingMinLevel: String = "trace", clientName: String, clientVersion: String, clientOs: String?) {
-        self.loggingEnabled = loggingEnabled
-        self.loggingMinLevel = loggingMinLevel
+    public init(clientName: String, clientVersion: String, clientOs: String?) {
         self.clientName = clientName
         self.clientVersion = clientVersion
         self.clientOs = clientOs
@@ -5483,12 +5488,6 @@ extension ClientConfig: Sendable {}
 
 extension ClientConfig: Equatable, Hashable {
     public static func ==(lhs: ClientConfig, rhs: ClientConfig) -> Bool {
-        if lhs.loggingEnabled != rhs.loggingEnabled {
-            return false
-        }
-        if lhs.loggingMinLevel != rhs.loggingMinLevel {
-            return false
-        }
         if lhs.clientName != rhs.clientName {
             return false
         }
@@ -5502,8 +5501,6 @@ extension ClientConfig: Equatable, Hashable {
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(loggingEnabled)
-        hasher.combine(loggingMinLevel)
         hasher.combine(clientName)
         hasher.combine(clientVersion)
         hasher.combine(clientOs)
@@ -5519,8 +5516,6 @@ public struct FfiConverterTypeClientConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClientConfig {
         return
             try ClientConfig(
-                loggingEnabled: FfiConverterBool.read(from: &buf), 
-                loggingMinLevel: FfiConverterString.read(from: &buf), 
                 clientName: FfiConverterString.read(from: &buf), 
                 clientVersion: FfiConverterString.read(from: &buf), 
                 clientOs: FfiConverterOptionString.read(from: &buf)
@@ -5528,8 +5523,6 @@ public struct FfiConverterTypeClientConfig: FfiConverterRustBuffer {
     }
 
     public static func write(_ value: ClientConfig, into buf: inout [UInt8]) {
-        FfiConverterBool.write(value.loggingEnabled, into: &buf)
-        FfiConverterString.write(value.loggingMinLevel, into: &buf)
         FfiConverterString.write(value.clientName, into: &buf)
         FfiConverterString.write(value.clientVersion, into: &buf)
         FfiConverterOptionString.write(value.clientOs, into: &buf)
@@ -10894,6 +10887,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_disconnect() != 21087) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_method_client_enable_logging() != 39036) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_find_public_channel_by_name() != 29293) {

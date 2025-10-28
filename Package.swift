@@ -19,8 +19,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "ProseCore",
-            url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/v0.14.0/ProseSDK-0.14.0.zip",
-            checksum: "dccf6b10bb579d43666f96474e8a795d636132c3d3ca14052c9ca60fd9456827"
+            url: "https://github.com/prose-im/prose-wrapper-swift/releases/download/v0.15.0/ProseSDK-0.15.0.zip",
+            checksum: "8e7fc314c534718b9f82cbba4d5a9ded4f8c07819eae60713b8b36af1e9d2003"
         ),
         .target(
             name: "ProseSDK",
