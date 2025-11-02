@@ -4,6 +4,7 @@
 // swiftlint:disable all
 import Foundation
 import Foundation
+import UIKit
 
 // Depending on the consumer's build setup, the low-level FFI code
 // might be in a separate module, or it might be compiled inline into
@@ -1010,6 +1011,8 @@ public protocol ClientProtocol: AnyObject, Sendable {
     
     func findPublicChannelByName(name: String) async throws  -> RoomId?
     
+    func getConnectedRoom(roomId: RoomId) throws  -> RoomEnvelope?
+    
     /**
      * Joins the room identified by `room_jid` and returns its `BareJid`.
      */
@@ -1056,6 +1059,8 @@ public protocol ClientProtocol: AnyObject, Sendable {
      */
     func removeContact(userId: UserId) async throws 
     
+    func removeItemFromSidebar(roomId: RoomId) async throws 
+    
     /**
      * Requests a presence subscription from `jid`. Note that happens automatically when you
      * call `add_contact`. This method can be useful though when our user needs to re-request
@@ -1101,6 +1106,8 @@ public protocol ClientProtocol: AnyObject, Sendable {
     func startConversation(participants: [UserId]) async throws  -> RoomId
     
     func startObservingRooms() async throws 
+    
+    func toggleSidebarFavorite(roomId: RoomId) async throws 
     
     /**
      * Unblocks the user identified by `user_id`.
@@ -1454,6 +1461,14 @@ open func findPublicChannelByName(name: String)async throws  -> RoomId?  {
         )
 }
     
+open func getConnectedRoom(roomId: RoomId)throws  -> RoomEnvelope?  {
+    return try  FfiConverterOptionTypeRoomEnvelope.lift(try rustCallWithError(FfiConverterTypeClientError_lift) {
+    uniffi_prose_sdk_ffi_fn_method_client_get_connected_room(self.uniffiClonePointer(),
+        FfiConverterTypeRoomId_lower(roomId),$0
+    )
+})
+}
+    
     /**
      * Joins the room identified by `room_jid` and returns its `BareJid`.
      */
@@ -1686,6 +1701,23 @@ open func removeContact(userId: UserId)async throws   {
         )
 }
     
+open func removeItemFromSidebar(roomId: RoomId)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_prose_sdk_ffi_fn_method_client_remove_item_from_sidebar(
+                    self.uniffiClonePointer(),
+                    FfiConverterTypeRoomId_lower(roomId)
+                )
+            },
+            pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
+            completeFunc: ffi_prose_sdk_ffi_rust_future_complete_void,
+            freeFunc: ffi_prose_sdk_ffi_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeClientError_lift
+        )
+}
+    
     /**
      * Requests a presence subscription from `jid`. Note that happens automatically when you
      * call `add_contact`. This method can be useful though when our user needs to re-request
@@ -1858,6 +1890,23 @@ open func startObservingRooms()async throws   {
                 uniffi_prose_sdk_ffi_fn_method_client_start_observing_rooms(
                     self.uniffiClonePointer()
                     
+                )
+            },
+            pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
+            completeFunc: ffi_prose_sdk_ffi_rust_future_complete_void,
+            freeFunc: ffi_prose_sdk_ffi_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeClientError_lift
+        )
+}
+    
+open func toggleSidebarFavorite(roomId: RoomId)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_prose_sdk_ffi_fn_method_client_toggle_sidebar_favorite(
+                    self.uniffiClonePointer(),
+                    FfiConverterTypeRoomId_lower(roomId)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -6759,7 +6808,9 @@ public func FfiConverterTypeSendMessageRequestBody_lower(_ value: SendMessageReq
 
 public struct SidebarItem {
     public var name: String
-    public var room: RoomEnvelope
+    public var roomId: RoomId
+    public var type: SidebarItemType
+    public var roomState: RoomState
     public var isFavorite: Bool
     public var hasDraft: Bool
     public var unreadCount: UInt32
@@ -6767,9 +6818,11 @@ public struct SidebarItem {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(name: String, room: RoomEnvelope, isFavorite: Bool, hasDraft: Bool, unreadCount: UInt32, mentionsCount: UInt32) {
+    public init(name: String, roomId: RoomId, type: SidebarItemType, roomState: RoomState, isFavorite: Bool, hasDraft: Bool, unreadCount: UInt32, mentionsCount: UInt32) {
         self.name = name
-        self.room = room
+        self.roomId = roomId
+        self.type = type
+        self.roomState = roomState
         self.isFavorite = isFavorite
         self.hasDraft = hasDraft
         self.unreadCount = unreadCount
@@ -6791,7 +6844,9 @@ public struct FfiConverterTypeSidebarItem: FfiConverterRustBuffer {
         return
             try SidebarItem(
                 name: FfiConverterString.read(from: &buf), 
-                room: FfiConverterTypeRoomEnvelope.read(from: &buf), 
+                roomId: FfiConverterTypeRoomId.read(from: &buf), 
+                type: FfiConverterTypeSidebarItemType.read(from: &buf), 
+                roomState: FfiConverterTypeRoomState.read(from: &buf), 
                 isFavorite: FfiConverterBool.read(from: &buf), 
                 hasDraft: FfiConverterBool.read(from: &buf), 
                 unreadCount: FfiConverterUInt32.read(from: &buf), 
@@ -6801,7 +6856,9 @@ public struct FfiConverterTypeSidebarItem: FfiConverterRustBuffer {
 
     public static func write(_ value: SidebarItem, into buf: inout [UInt8]) {
         FfiConverterString.write(value.name, into: &buf)
-        FfiConverterTypeRoomEnvelope.write(value.room, into: &buf)
+        FfiConverterTypeRoomId.write(value.roomId, into: &buf)
+        FfiConverterTypeSidebarItemType.write(value.type, into: &buf)
+        FfiConverterTypeRoomState.write(value.roomState, into: &buf)
         FfiConverterBool.write(value.isFavorite, into: &buf)
         FfiConverterBool.write(value.hasDraft, into: &buf)
         FfiConverterUInt32.write(value.unreadCount, into: &buf)
@@ -9084,6 +9141,99 @@ extension RoomType: Equatable, Hashable {}
 
 
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum SidebarItemType {
+    
+    case directMessage(availability: Availability, initials: String, color: HexColor, avatar: Avatar?, status: UserStatus?
+    )
+    case group
+    case privateChannel
+    case publicChannel
+    case generic
+}
+
+
+#if compiler(>=6)
+extension SidebarItemType: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSidebarItemType: FfiConverterRustBuffer {
+    typealias SwiftType = SidebarItemType
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SidebarItemType {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .directMessage(availability: try FfiConverterTypeAvailability.read(from: &buf), initials: try FfiConverterString.read(from: &buf), color: try FfiConverterTypeHexColor.read(from: &buf), avatar: try FfiConverterOptionTypeAvatar.read(from: &buf), status: try FfiConverterOptionTypeUserStatus.read(from: &buf)
+        )
+        
+        case 2: return .group
+        
+        case 3: return .privateChannel
+        
+        case 4: return .publicChannel
+        
+        case 5: return .generic
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: SidebarItemType, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .directMessage(availability,initials,color,avatar,status):
+            writeInt(&buf, Int32(1))
+            FfiConverterTypeAvailability.write(availability, into: &buf)
+            FfiConverterString.write(initials, into: &buf)
+            FfiConverterTypeHexColor.write(color, into: &buf)
+            FfiConverterOptionTypeAvatar.write(avatar, into: &buf)
+            FfiConverterOptionTypeUserStatus.write(status, into: &buf)
+            
+        
+        case .group:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .privateChannel:
+            writeInt(&buf, Int32(3))
+        
+        
+        case .publicChannel:
+            writeInt(&buf, Int32(4))
+        
+        
+        case .generic:
+            writeInt(&buf, Int32(5))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSidebarItemType_lift(_ buf: RustBuffer) throws -> SidebarItemType {
+    return try FfiConverterTypeSidebarItemType.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSidebarItemType_lower(_ value: SidebarItemType) -> RustBuffer {
+    return FfiConverterTypeSidebarItemType.lower(value)
+}
+
+
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -9487,6 +9637,30 @@ fileprivate struct FfiConverterOptionTypeConnectionError: FfiConverterRustBuffer
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeConnectionError.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeRoomEnvelope: FfiConverterRustBuffer {
+    typealias SwiftType = RoomEnvelope?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeRoomEnvelope.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeRoomEnvelope.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -10313,6 +10487,58 @@ public func FfiConverterTypeEmoji_lower(_ value: Emoji) -> RustBuffer {
 
 
 
+
+
+/**
+ * Typealias from the type name used in the UDL file to the custom type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias HexColor = UIColor
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHexColor: FfiConverter {
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HexColor {
+        let builtinValue = try FfiConverterString.read(from: &buf)
+        return UIColor(prose_hex: builtinValue)!
+    }
+
+    public static func write(_ value: HexColor, into buf: inout [UInt8]) {
+        let builtinValue = "unimplemented"
+        return FfiConverterString.write(builtinValue, into: &buf)
+    }
+
+    public static func lift(_ value: RustBuffer) throws -> HexColor {
+        let builtinValue = try FfiConverterString.lift(value)
+        return UIColor(prose_hex: builtinValue)!
+    }
+
+    public static func lower(_ value: HexColor) -> RustBuffer {
+        let builtinValue = "unimplemented"
+        return FfiConverterString.lower(builtinValue)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHexColor_lift(_ value: RustBuffer) throws -> HexColor {
+    return try FfiConverterTypeHexColor.lift(value)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHexColor_lower(_ value: HexColor) -> RustBuffer {
+    return FfiConverterTypeHexColor.lower(value)
+}
+
+
+
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
@@ -10895,6 +11121,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_find_public_channel_by_name() != 29293) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_prose_sdk_ffi_checksum_method_client_get_connected_room() != 59141) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_prose_sdk_ffi_checksum_method_client_join_room() != 63549) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -10934,6 +11163,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_remove_contact() != 18687) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_prose_sdk_ffi_checksum_method_client_remove_item_from_sidebar() != 10587) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_prose_sdk_ffi_checksum_method_client_request_presence_sub() != 29804) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -10959,6 +11191,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_start_observing_rooms() != 21767) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_method_client_toggle_sidebar_favorite() != 43173) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_unblock_user() != 28062) {
