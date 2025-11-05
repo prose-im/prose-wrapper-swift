@@ -517,15 +517,15 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 public protocol AccountBookmarksClientProtocol: AnyObject, Sendable {
     
-    func addBookmark(userId: UserId, selectBookmark: Bool) throws 
+    func addBookmark(userId: FfiUserId, selectBookmark: Bool) throws 
     
     func loadBookmarks() throws  -> [AccountBookmark]
     
-    func removeBookmark(userId: UserId) throws 
+    func removeBookmark(userId: FfiUserId) throws 
     
     func saveBookmarks(bookmarks: [AccountBookmark]) throws 
     
-    func selectBookmark(userId: UserId) throws 
+    func selectBookmark(userId: FfiUserId) throws 
     
 }
 open class AccountBookmarksClient: AccountBookmarksClientProtocol, @unchecked Sendable {
@@ -588,9 +588,9 @@ public convenience init(bookmarksPath: PathBuf) {
     
 
     
-open func addBookmark(userId: UserId, selectBookmark: Bool)throws   {try rustCallWithError(FfiConverterTypeClientError_lift) {
+open func addBookmark(userId: FfiUserId, selectBookmark: Bool)throws   {try rustCallWithError(FfiConverterTypeClientError_lift) {
     uniffi_prose_sdk_ffi_fn_method_accountbookmarksclient_add_bookmark(self.uniffiClonePointer(),
-        FfiConverterTypeUserId_lower(userId),
+        FfiConverterTypeFFIUserId_lower(userId),
         FfiConverterBool.lower(selectBookmark),$0
     )
 }
@@ -603,9 +603,9 @@ open func loadBookmarks()throws  -> [AccountBookmark]  {
 })
 }
     
-open func removeBookmark(userId: UserId)throws   {try rustCallWithError(FfiConverterTypeClientError_lift) {
+open func removeBookmark(userId: FfiUserId)throws   {try rustCallWithError(FfiConverterTypeClientError_lift) {
     uniffi_prose_sdk_ffi_fn_method_accountbookmarksclient_remove_bookmark(self.uniffiClonePointer(),
-        FfiConverterTypeUserId_lower(userId),$0
+        FfiConverterTypeFFIUserId_lower(userId),$0
     )
 }
 }
@@ -617,9 +617,9 @@ open func saveBookmarks(bookmarks: [AccountBookmark])throws   {try rustCallWithE
 }
 }
     
-open func selectBookmark(userId: UserId)throws   {try rustCallWithError(FfiConverterTypeClientError_lift) {
+open func selectBookmark(userId: FfiUserId)throws   {try rustCallWithError(FfiConverterTypeClientError_lift) {
     uniffi_prose_sdk_ffi_fn_method_accountbookmarksclient_select_bookmark(self.uniffiClonePointer(),
-        FfiConverterTypeUserId_lower(userId),$0
+        FfiConverterTypeFFIUserId_lower(userId),$0
     )
 }
 }
@@ -816,7 +816,7 @@ public func FfiConverterTypeAvatar_lower(_ value: Avatar) -> UnsafeMutableRawPoi
 
 public protocol ChannelProtocol: AnyObject, Sendable {
     
-    func inviteUsers(users: [UserId]) async throws 
+    func inviteUsers(users: [FfiUserId]) async throws 
     
 }
 open class Channel: ChannelProtocol, @unchecked Sendable {
@@ -871,13 +871,13 @@ open class Channel: ChannelProtocol, @unchecked Sendable {
     
 
     
-open func inviteUsers(users: [UserId])async throws   {
+open func inviteUsers(users: [FfiUserId])async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_channel_invite_users(
                     self.uniffiClonePointer(),
-                    FfiConverterSequenceTypeUserId.lower(users)
+                    FfiConverterSequenceTypeFFIUserId.lower(users)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -951,7 +951,7 @@ public protocol ClientProtocol: AnyObject, Sendable {
     /**
      * Adds a contact to the roster and sends a presence subscription request.
      */
-    func addContact(userId: UserId) async throws 
+    func addContact(userId: FfiUserId) async throws 
     
     /**
      * Approves the presence subscription request identified by `id`.
@@ -961,7 +961,7 @@ public protocol ClientProtocol: AnyObject, Sendable {
     /**
      * Blocks the user identified by `user_id`.
      */
-    func blockUser(userId: UserId) async throws 
+    func blockUser(userId: FfiUserId) async throws 
     
     /**
      * XEP-0077: In-Band Registration
@@ -974,13 +974,13 @@ public protocol ClientProtocol: AnyObject, Sendable {
      */
     func clearBlockList() async throws 
     
-    func connect(userId: UserId, password: String) async throws 
+    func connect(userId: FfiUserId, password: String) async throws 
     
     /**
      * Creates the group or joins it if it already exists and returns the `BareJid`.
      * Sends invites to all participants if the group was created.
      */
-    func createGroup(participants: [UserId]) async throws  -> RoomId
+    func createGroup(participants: [FfiUserId]) async throws  -> RoomId
     
     /**
      * Creates the private channel and returns the `BareJid` of the created room.
@@ -1003,7 +1003,7 @@ public protocol ClientProtocol: AnyObject, Sendable {
     /**
      * Destroys the room identified by `room_jid`.
      */
-    func destroyRoom(roomId: MucId) async throws 
+    func destroyRoom(roomId: FfiMucId) async throws 
     
     func disconnect() async throws 
     
@@ -1016,7 +1016,7 @@ public protocol ClientProtocol: AnyObject, Sendable {
     /**
      * Joins the room identified by `room_jid` and returns its `BareJid`.
      */
-    func joinRoom(roomId: MucId, password: String?) async throws  -> RoomId
+    func joinRoom(roomId: FfiMucId, password: String?) async throws  -> RoomId
     
     func loadAccountInfo() async throws  -> AccountInfo
     
@@ -1042,11 +1042,11 @@ public protocol ClientProtocol: AnyObject, Sendable {
      * XEP-0292: vCard4 Over XMPP
      * https://xmpp.org/extensions/xep-0292.html
      */
-    func loadProfile(from: UserId) async throws  -> UserProfile?
+    func loadProfile(from: FfiUserId) async throws  -> UserProfile?
     
     func loadPublicChannels() async throws  -> [PublicRoomInfo]
     
-    func loadUserMetadata(userId: UserId) async throws  -> UserMetadata
+    func loadUserMetadata(userId: FfiUserId) async throws  -> UserMetadata
     
     func loadWorkspaceIcon(icon: WorkspaceIcon) async throws  -> PathBuf?
     
@@ -1057,7 +1057,7 @@ public protocol ClientProtocol: AnyObject, Sendable {
     /**
      * Removes a contact from the roster
      */
-    func removeContact(userId: UserId) async throws 
+    func removeContact(userId: FfiUserId) async throws 
     
     func removeItemFromSidebar(roomId: RoomId) async throws 
     
@@ -1066,7 +1066,7 @@ public protocol ClientProtocol: AnyObject, Sendable {
      * call `add_contact`. This method can be useful though when our user needs to re-request
      * the presence subscription in case the contact hasn't reacted in a while.
      */
-    func requestPresenceSub(userId: UserId) async throws 
+    func requestPresenceSub(userId: FfiUserId) async throws 
     
     /**
      * Request a slot for uploading a file to attach it to a message.
@@ -1103,7 +1103,7 @@ public protocol ClientProtocol: AnyObject, Sendable {
      * Creates the direct message or joins it if it already exists and returns the `BareJid`.
      * Sends invites to all participants if the group was created.
      */
-    func startConversation(participants: [UserId]) async throws  -> RoomId
+    func startConversation(participants: [FfiUserId]) async throws  -> RoomId
     
     func startObservingRooms() async throws 
     
@@ -1112,7 +1112,7 @@ public protocol ClientProtocol: AnyObject, Sendable {
     /**
      * Unblocks the user identified by `user_id`.
      */
-    func unblockUser(userId: UserId) async throws 
+    func unblockUser(userId: FfiUserId) async throws 
     
 }
 open class Client: ClientProtocol, @unchecked Sendable {
@@ -1186,13 +1186,13 @@ public convenience init(cacheDir: PathBuf, delegate: ClientDelegate?, config: Cl
     /**
      * Adds a contact to the roster and sends a presence subscription request.
      */
-open func addContact(userId: UserId)async throws   {
+open func addContact(userId: FfiUserId)async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_add_contact(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeUserId_lower(userId)
+                    FfiConverterTypeFFIUserId_lower(userId)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -1226,13 +1226,13 @@ open func approvePresenceSubRequest(id: PresenceSubRequestId)async throws   {
     /**
      * Blocks the user identified by `user_id`.
      */
-open func blockUser(userId: UserId)async throws   {
+open func blockUser(userId: FfiUserId)async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_block_user(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeUserId_lower(userId)
+                    FfiConverterTypeFFIUserId_lower(userId)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -1284,13 +1284,13 @@ open func clearBlockList()async throws   {
         )
 }
     
-open func connect(userId: UserId, password: String)async throws   {
+open func connect(userId: FfiUserId, password: String)async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_connect(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeUserId_lower(userId),FfiConverterString.lower(password)
+                    FfiConverterTypeFFIUserId_lower(userId),FfiConverterString.lower(password)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -1305,13 +1305,13 @@ open func connect(userId: UserId, password: String)async throws   {
      * Creates the group or joins it if it already exists and returns the `BareJid`.
      * Sends invites to all participants if the group was created.
      */
-open func createGroup(participants: [UserId])async throws  -> RoomId  {
+open func createGroup(participants: [FfiUserId])async throws  -> RoomId  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_create_group(
                     self.uniffiClonePointer(),
-                    FfiConverterSequenceTypeUserId.lower(participants)
+                    FfiConverterSequenceTypeFFIUserId.lower(participants)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_rust_buffer,
@@ -1403,13 +1403,13 @@ open func denyPresenceSubRequest(id: PresenceSubRequestId)async throws   {
     /**
      * Destroys the room identified by `room_jid`.
      */
-open func destroyRoom(roomId: MucId)async throws   {
+open func destroyRoom(roomId: FfiMucId)async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_destroy_room(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeMucId_lower(roomId)
+                    FfiConverterTypeFFIMucId_lower(roomId)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -1472,13 +1472,13 @@ open func getConnectedRoom(roomId: RoomId)throws  -> RoomEnvelope?  {
     /**
      * Joins the room identified by `room_jid` and returns its `BareJid`.
      */
-open func joinRoom(roomId: MucId, password: String?)async throws  -> RoomId  {
+open func joinRoom(roomId: FfiMucId, password: String?)async throws  -> RoomId  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_join_room(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeMucId_lower(roomId),FfiConverterOptionString.lower(password)
+                    FfiConverterTypeFFIMucId_lower(roomId),FfiConverterOptionString.lower(password)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_rust_buffer,
@@ -1588,13 +1588,13 @@ open func loadPresenceSubRequests()async throws  -> [PresenceSubRequest]  {
      * XEP-0292: vCard4 Over XMPP
      * https://xmpp.org/extensions/xep-0292.html
      */
-open func loadProfile(from: UserId)async throws  -> UserProfile?  {
+open func loadProfile(from: FfiUserId)async throws  -> UserProfile?  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_load_profile(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeUserId_lower(from)
+                    FfiConverterTypeFFIUserId_lower(from)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_rust_buffer,
@@ -1622,13 +1622,13 @@ open func loadPublicChannels()async throws  -> [PublicRoomInfo]  {
         )
 }
     
-open func loadUserMetadata(userId: UserId)async throws  -> UserMetadata  {
+open func loadUserMetadata(userId: FfiUserId)async throws  -> UserMetadata  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_load_user_metadata(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeUserId_lower(userId)
+                    FfiConverterTypeFFIUserId_lower(userId)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_rust_buffer,
@@ -1684,13 +1684,13 @@ open func previewMarkdown(markdown: String) -> String  {
     /**
      * Removes a contact from the roster
      */
-open func removeContact(userId: UserId)async throws   {
+open func removeContact(userId: FfiUserId)async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_remove_contact(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeUserId_lower(userId)
+                    FfiConverterTypeFFIUserId_lower(userId)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -1723,13 +1723,13 @@ open func removeItemFromSidebar(roomId: RoomId)async throws   {
      * call `add_contact`. This method can be useful though when our user needs to re-request
      * the presence subscription in case the contact hasn't reacted in a while.
      */
-open func requestPresenceSub(userId: UserId)async throws   {
+open func requestPresenceSub(userId: FfiUserId)async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_request_presence_sub(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeUserId_lower(userId)
+                    FfiConverterTypeFFIUserId_lower(userId)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -1866,13 +1866,13 @@ open func sidebarItems()async  -> [SidebarItem]  {
      * Creates the direct message or joins it if it already exists and returns the `BareJid`.
      * Sends invites to all participants if the group was created.
      */
-open func startConversation(participants: [UserId])async throws  -> RoomId  {
+open func startConversation(participants: [FfiUserId])async throws  -> RoomId  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_start_conversation(
                     self.uniffiClonePointer(),
-                    FfiConverterSequenceTypeUserId.lower(participants)
+                    FfiConverterSequenceTypeFFIUserId.lower(participants)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_rust_buffer,
@@ -1920,13 +1920,13 @@ open func toggleSidebarFavorite(roomId: RoomId)async throws   {
     /**
      * Unblocks the user identified by `user_id`.
      */
-open func unblockUser(userId: UserId)async throws   {
+open func unblockUser(userId: FfiUserId)async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_client_unblock_user(
                     self.uniffiClonePointer(),
-                    FfiConverterTypeUserId_lower(userId)
+                    FfiConverterTypeFFIUserId_lower(userId)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -4246,7 +4246,7 @@ public protocol RoomPrivateChannelProtocol: AnyObject, Sendable {
     
     func id()  -> RoomId
     
-    func inviteUsers(users: [UserId]) async throws 
+    func inviteUsers(users: [FfiUserId]) async throws 
     
     func loadComposingUsers() async throws  -> [ParticipantBasicInfo]
     
@@ -4348,13 +4348,13 @@ open func id() -> RoomId  {
 })
 }
     
-open func inviteUsers(users: [UserId])async throws   {
+open func inviteUsers(users: [FfiUserId])async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_roomprivatechannel_invite_users(
                     self.uniffiClonePointer(),
-                    FfiConverterSequenceTypeUserId.lower(users)
+                    FfiConverterSequenceTypeFFIUserId.lower(users)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -4735,7 +4735,7 @@ public protocol RoomPublicChannelProtocol: AnyObject, Sendable {
     
     func id()  -> RoomId
     
-    func inviteUsers(users: [UserId]) async throws 
+    func inviteUsers(users: [FfiUserId]) async throws 
     
     func loadComposingUsers() async throws  -> [ParticipantBasicInfo]
     
@@ -4837,13 +4837,13 @@ open func id() -> RoomId  {
 })
 }
     
-open func inviteUsers(users: [UserId])async throws   {
+open func inviteUsers(users: [FfiUserId])async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_prose_sdk_ffi_fn_method_roompublicchannel_invite_users(
                     self.uniffiClonePointer(),
-                    FfiConverterSequenceTypeUserId.lower(users)
+                    FfiConverterSequenceTypeFFIUserId.lower(users)
                 )
             },
             pollFunc: ffi_prose_sdk_ffi_rust_future_poll_void,
@@ -5219,12 +5219,12 @@ public func FfiConverterTypeRoomPublicChannel_lower(_ value: RoomPublicChannel) 
 
 
 public struct AccountBookmark {
-    public var userId: UserId
+    public var userId: FfiUserId
     public var isSelected: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(userId: UserId, isSelected: Bool) {
+    public init(userId: FfiUserId, isSelected: Bool) {
         self.userId = userId
         self.isSelected = isSelected
     }
@@ -5261,13 +5261,13 @@ public struct FfiConverterTypeAccountBookmark: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AccountBookmark {
         return
             try AccountBookmark(
-                userId: FfiConverterTypeUserId.read(from: &buf), 
+                userId: FfiConverterTypeFFIUserId.read(from: &buf), 
                 isSelected: FfiConverterBool.read(from: &buf)
         )
     }
 
     public static func write(_ value: AccountBookmark, into buf: inout [UInt8]) {
-        FfiConverterTypeUserId.write(value.userId, into: &buf)
+        FfiConverterTypeFFIUserId.write(value.userId, into: &buf)
         FfiConverterBool.write(value.isSelected, into: &buf)
     }
 }
@@ -5289,7 +5289,7 @@ public func FfiConverterTypeAccountBookmark_lower(_ value: AccountBookmark) -> R
 
 
 public struct AccountInfo {
-    public var id: UserId
+    public var id: FfiUserId
     public var name: String
     public var avatar: Avatar?
     public var availability: Availability
@@ -5297,7 +5297,7 @@ public struct AccountInfo {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: UserId, name: String, avatar: Avatar?, availability: Availability, status: UserStatus?) {
+    public init(id: FfiUserId, name: String, avatar: Avatar?, availability: Availability, status: UserStatus?) {
         self.id = id
         self.name = name
         self.avatar = avatar
@@ -5319,7 +5319,7 @@ public struct FfiConverterTypeAccountInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AccountInfo {
         return
             try AccountInfo(
-                id: FfiConverterTypeUserId.read(from: &buf), 
+                id: FfiConverterTypeFFIUserId.read(from: &buf), 
                 name: FfiConverterString.read(from: &buf), 
                 avatar: FfiConverterOptionTypeAvatar.read(from: &buf), 
                 availability: FfiConverterTypeAvailability.read(from: &buf), 
@@ -5328,7 +5328,7 @@ public struct FfiConverterTypeAccountInfo: FfiConverterRustBuffer {
     }
 
     public static func write(_ value: AccountInfo, into buf: inout [UInt8]) {
-        FfiConverterTypeUserId.write(value.id, into: &buf)
+        FfiConverterTypeFFIUserId.write(value.id, into: &buf)
         FfiConverterString.write(value.name, into: &buf)
         FfiConverterOptionTypeAvatar.write(value.avatar, into: &buf)
         FfiConverterTypeAvailability.write(value.availability, into: &buf)
@@ -5516,6 +5516,62 @@ public func FfiConverterTypeAttachment_lower(_ value: Attachment) -> RustBuffer 
 }
 
 
+public struct AvatarBundle {
+    public var avatar: Avatar?
+    public var initials: String
+    public var color: HexColor
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(avatar: Avatar?, initials: String, color: HexColor) {
+        self.avatar = avatar
+        self.initials = initials
+        self.color = color
+    }
+}
+
+#if compiler(>=6)
+extension AvatarBundle: Sendable {}
+#endif
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeAvatarBundle: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AvatarBundle {
+        return
+            try AvatarBundle(
+                avatar: FfiConverterOptionTypeAvatar.read(from: &buf), 
+                initials: FfiConverterString.read(from: &buf), 
+                color: FfiConverterTypeHexColor.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: AvatarBundle, into buf: inout [UInt8]) {
+        FfiConverterOptionTypeAvatar.write(value.avatar, into: &buf)
+        FfiConverterString.write(value.initials, into: &buf)
+        FfiConverterTypeHexColor.write(value.color, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeAvatarBundle_lift(_ buf: RustBuffer) throws -> AvatarBundle {
+    return try FfiConverterTypeAvatarBundle.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeAvatarBundle_lower(_ value: AvatarBundle) -> RustBuffer {
+    return FfiConverterTypeAvatarBundle.lower(value)
+}
+
+
 public struct ClientConfig {
     public var clientName: String
     public var clientVersion: String
@@ -5595,17 +5651,19 @@ public func FfiConverterTypeClientConfig_lower(_ value: ClientConfig) -> RustBuf
 
 
 public struct Contact {
-    public var id: UserId
+    public var id: FfiUserId
     public var name: String
+    public var avatarBundle: AvatarBundle
     public var availability: Availability
     public var status: UserStatus?
     public var group: Group
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: UserId, name: String, availability: Availability, status: UserStatus?, group: Group) {
+    public init(id: FfiUserId, name: String, avatarBundle: AvatarBundle, availability: Availability, status: UserStatus?, group: Group) {
         self.id = id
         self.name = name
+        self.avatarBundle = avatarBundle
         self.availability = availability
         self.status = status
         self.group = group
@@ -5617,36 +5675,6 @@ extension Contact: Sendable {}
 #endif
 
 
-extension Contact: Equatable, Hashable {
-    public static func ==(lhs: Contact, rhs: Contact) -> Bool {
-        if lhs.id != rhs.id {
-            return false
-        }
-        if lhs.name != rhs.name {
-            return false
-        }
-        if lhs.availability != rhs.availability {
-            return false
-        }
-        if lhs.status != rhs.status {
-            return false
-        }
-        if lhs.group != rhs.group {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(name)
-        hasher.combine(availability)
-        hasher.combine(status)
-        hasher.combine(group)
-    }
-}
-
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -5655,8 +5683,9 @@ public struct FfiConverterTypeContact: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Contact {
         return
             try Contact(
-                id: FfiConverterTypeUserId.read(from: &buf), 
+                id: FfiConverterTypeFFIUserId.read(from: &buf), 
                 name: FfiConverterString.read(from: &buf), 
+                avatarBundle: FfiConverterTypeAvatarBundle.read(from: &buf), 
                 availability: FfiConverterTypeAvailability.read(from: &buf), 
                 status: FfiConverterOptionTypeUserStatus.read(from: &buf), 
                 group: FfiConverterTypeGroup.read(from: &buf)
@@ -5664,8 +5693,9 @@ public struct FfiConverterTypeContact: FfiConverterRustBuffer {
     }
 
     public static func write(_ value: Contact, into buf: inout [UInt8]) {
-        FfiConverterTypeUserId.write(value.id, into: &buf)
+        FfiConverterTypeFFIUserId.write(value.id, into: &buf)
         FfiConverterString.write(value.name, into: &buf)
+        FfiConverterTypeAvatarBundle.write(value.avatarBundle, into: &buf)
         FfiConverterTypeAvailability.write(value.availability, into: &buf)
         FfiConverterOptionTypeUserStatus.write(value.status, into: &buf)
         FfiConverterTypeGroup.write(value.group, into: &buf)
@@ -5829,12 +5859,12 @@ public func FfiConverterTypeLastActivity_lower(_ value: LastActivity) -> RustBuf
 
 
 public struct Mention {
-    public var user: UserId
+    public var user: FfiUserId
     public var range: UnicodeScalarRange?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(user: UserId, range: UnicodeScalarRange?) {
+    public init(user: FfiUserId, range: UnicodeScalarRange?) {
         self.user = user
         self.range = range
     }
@@ -5871,13 +5901,13 @@ public struct FfiConverterTypeMention: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Mention {
         return
             try Mention(
-                user: FfiConverterTypeUserId.read(from: &buf), 
+                user: FfiConverterTypeFFIUserId.read(from: &buf), 
                 range: FfiConverterOptionTypeUnicodeScalarRange.read(from: &buf)
         )
     }
 
     public static func write(_ value: Mention, into buf: inout [UInt8]) {
-        FfiConverterTypeUserId.write(value.user, into: &buf)
+        FfiConverterTypeFFIUserId.write(value.user, into: &buf)
         FfiConverterOptionTypeUnicodeScalarRange.write(value.range, into: &buf)
     }
 }
@@ -6336,7 +6366,7 @@ public func FfiConverterTypeParticipantBasicInfo_lower(_ value: ParticipantBasic
 
 public struct ParticipantInfo {
     public var id: ParticipantId
-    public var userId: UserId?
+    public var userId: FfiUserId?
     public var name: String
     public var isSelf: Bool
     public var availability: Availability
@@ -6347,7 +6377,7 @@ public struct ParticipantInfo {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: ParticipantId, userId: UserId?, name: String, isSelf: Bool, availability: Availability, affiliation: RoomAffiliation, avatar: Avatar?, client: JabberClient?, status: String?) {
+    public init(id: ParticipantId, userId: FfiUserId?, name: String, isSelf: Bool, availability: Availability, affiliation: RoomAffiliation, avatar: Avatar?, client: JabberClient?, status: String?) {
         self.id = id
         self.userId = userId
         self.name = name
@@ -6374,7 +6404,7 @@ public struct FfiConverterTypeParticipantInfo: FfiConverterRustBuffer {
         return
             try ParticipantInfo(
                 id: FfiConverterTypeParticipantId.read(from: &buf), 
-                userId: FfiConverterOptionTypeUserId.read(from: &buf), 
+                userId: FfiConverterOptionTypeFFIUserId.read(from: &buf), 
                 name: FfiConverterString.read(from: &buf), 
                 isSelf: FfiConverterBool.read(from: &buf), 
                 availability: FfiConverterTypeAvailability.read(from: &buf), 
@@ -6387,7 +6417,7 @@ public struct FfiConverterTypeParticipantInfo: FfiConverterRustBuffer {
 
     public static func write(_ value: ParticipantInfo, into buf: inout [UInt8]) {
         FfiConverterTypeParticipantId.write(value.id, into: &buf)
-        FfiConverterOptionTypeUserId.write(value.userId, into: &buf)
+        FfiConverterOptionTypeFFIUserId.write(value.userId, into: &buf)
         FfiConverterString.write(value.name, into: &buf)
         FfiConverterBool.write(value.isSelf, into: &buf)
         FfiConverterTypeAvailability.write(value.availability, into: &buf)
@@ -6417,11 +6447,11 @@ public func FfiConverterTypeParticipantInfo_lower(_ value: ParticipantInfo) -> R
 public struct PresenceSubRequest {
     public var id: PresenceSubRequestId
     public var name: String
-    public var userId: UserId
+    public var userId: FfiUserId
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: PresenceSubRequestId, name: String, userId: UserId) {
+    public init(id: PresenceSubRequestId, name: String, userId: FfiUserId) {
         self.id = id
         self.name = name
         self.userId = userId
@@ -6465,14 +6495,14 @@ public struct FfiConverterTypePresenceSubRequest: FfiConverterRustBuffer {
             try PresenceSubRequest(
                 id: FfiConverterTypePresenceSubRequestId.read(from: &buf), 
                 name: FfiConverterString.read(from: &buf), 
-                userId: FfiConverterTypeUserId.read(from: &buf)
+                userId: FfiConverterTypeFFIUserId.read(from: &buf)
         )
     }
 
     public static func write(_ value: PresenceSubRequest, into buf: inout [UInt8]) {
         FfiConverterTypePresenceSubRequestId.write(value.id, into: &buf)
         FfiConverterString.write(value.name, into: &buf)
-        FfiConverterTypeUserId.write(value.userId, into: &buf)
+        FfiConverterTypeFFIUserId.write(value.userId, into: &buf)
     }
 }
 
@@ -6493,12 +6523,12 @@ public func FfiConverterTypePresenceSubRequest_lower(_ value: PresenceSubRequest
 
 
 public struct PublicRoomInfo {
-    public var id: MucId
+    public var id: FfiMucId
     public var name: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: MucId, name: String?) {
+    public init(id: FfiMucId, name: String?) {
         self.id = id
         self.name = name
     }
@@ -6535,13 +6565,13 @@ public struct FfiConverterTypePublicRoomInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PublicRoomInfo {
         return
             try PublicRoomInfo(
-                id: FfiConverterTypeMucId.read(from: &buf), 
+                id: FfiConverterTypeFFIMucId.read(from: &buf), 
                 name: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: PublicRoomInfo, into buf: inout [UInt8]) {
-        FfiConverterTypeMucId.write(value.id, into: &buf)
+        FfiConverterTypeFFIMucId.write(value.id, into: &buf)
         FfiConverterOptionString.write(value.name, into: &buf)
     }
 }
@@ -7216,13 +7246,13 @@ public func FfiConverterTypeUploadSlot_lower(_ value: UploadSlot) -> RustBuffer 
 
 
 public struct UserBasicInfo {
-    public var id: UserId
+    public var id: FfiUserId
     public var name: String
     public var avatar: Avatar?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: UserId, name: String, avatar: Avatar?) {
+    public init(id: FfiUserId, name: String, avatar: Avatar?) {
         self.id = id
         self.name = name
         self.avatar = avatar
@@ -7242,14 +7272,14 @@ public struct FfiConverterTypeUserBasicInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserBasicInfo {
         return
             try UserBasicInfo(
-                id: FfiConverterTypeUserId.read(from: &buf), 
+                id: FfiConverterTypeFFIUserId.read(from: &buf), 
                 name: FfiConverterString.read(from: &buf), 
                 avatar: FfiConverterOptionTypeAvatar.read(from: &buf)
         )
     }
 
     public static func write(_ value: UserBasicInfo, into buf: inout [UInt8]) {
-        FfiConverterTypeUserId.write(value.id, into: &buf)
+        FfiConverterTypeFFIUserId.write(value.id, into: &buf)
         FfiConverterString.write(value.name, into: &buf)
         FfiConverterOptionTypeAvatar.write(value.avatar, into: &buf)
     }
@@ -7969,7 +7999,7 @@ public enum ClientEvent {
     /**
      * Infos about a contact have changed.
      */
-    case contactChanged(ids: [UserId]
+    case contactChanged(ids: [FfiUserId]
     )
     /**
      * Contacts were added, removed or their subscription status changed.
@@ -7986,7 +8016,7 @@ public enum ClientEvent {
     /**
      * The avatar of a user changed.
      */
-    case avatarChanged(ids: [UserId]
+    case avatarChanged(ids: [FfiUserId]
     )
     /**
      * Infos related to the logged-in user have changed.
@@ -8024,7 +8054,7 @@ public struct FfiConverterTypeClientEvent: FfiConverterRustBuffer {
         
         case 2: return .sidebarChanged
         
-        case 3: return .contactChanged(ids: try FfiConverterSequenceTypeUserId.read(from: &buf)
+        case 3: return .contactChanged(ids: try FfiConverterSequenceTypeFFIUserId.read(from: &buf)
         )
         
         case 4: return .contactListChanged
@@ -8033,7 +8063,7 @@ public struct FfiConverterTypeClientEvent: FfiConverterRustBuffer {
         
         case 6: return .blockListChanged
         
-        case 7: return .avatarChanged(ids: try FfiConverterSequenceTypeUserId.read(from: &buf)
+        case 7: return .avatarChanged(ids: try FfiConverterSequenceTypeFFIUserId.read(from: &buf)
         )
         
         case 8: return .accountInfoChanged
@@ -8064,7 +8094,7 @@ public struct FfiConverterTypeClientEvent: FfiConverterRustBuffer {
         
         case let .contactChanged(ids):
             writeInt(&buf, Int32(3))
-            FfiConverterSequenceTypeUserId.write(ids, into: &buf)
+            FfiConverterSequenceTypeFFIUserId.write(ids, into: &buf)
             
         
         case .contactListChanged:
@@ -8081,7 +8111,7 @@ public struct FfiConverterTypeClientEvent: FfiConverterRustBuffer {
         
         case let .avatarChanged(ids):
             writeInt(&buf, Int32(7))
-            FfiConverterSequenceTypeUserId.write(ids, into: &buf)
+            FfiConverterSequenceTypeFFIUserId.write(ids, into: &buf)
             
         
         case .accountInfoChanged:
@@ -8645,7 +8675,7 @@ extension JidParseError: Foundation.LocalizedError {
 
 public enum ParticipantId {
     
-    case user(UserId
+    case user(FfiUserId
     )
     case occupant(OccupantId
     )
@@ -8666,7 +8696,7 @@ public struct FfiConverterTypeParticipantId: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .user(try FfiConverterTypeUserId.read(from: &buf)
+        case 1: return .user(try FfiConverterTypeFFIUserId.read(from: &buf)
         )
         
         case 2: return .occupant(try FfiConverterTypeOccupantId.read(from: &buf)
@@ -8682,7 +8712,7 @@ public struct FfiConverterTypeParticipantId: FfiConverterRustBuffer {
         
         case let .user(v1):
             writeInt(&buf, Int32(1))
-            FfiConverterTypeUserId.write(v1, into: &buf)
+            FfiConverterTypeFFIUserId.write(v1, into: &buf)
             
         
         case let .occupant(v1):
@@ -8907,9 +8937,9 @@ public func FfiConverterTypeRoomEnvelope_lower(_ value: RoomEnvelope) -> RustBuf
 
 public enum RoomId {
     
-    case user(UserId
+    case user(FfiUserId
     )
-    case muc(MucId
+    case muc(FfiMucId
     )
 }
 
@@ -8928,10 +8958,10 @@ public struct FfiConverterTypeRoomId: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .user(try FfiConverterTypeUserId.read(from: &buf)
+        case 1: return .user(try FfiConverterTypeFFIUserId.read(from: &buf)
         )
         
-        case 2: return .muc(try FfiConverterTypeMucId.read(from: &buf)
+        case 2: return .muc(try FfiConverterTypeFFIMucId.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -8944,12 +8974,12 @@ public struct FfiConverterTypeRoomId: FfiConverterRustBuffer {
         
         case let .user(v1):
             writeInt(&buf, Int32(1))
-            FfiConverterTypeUserId.write(v1, into: &buf)
+            FfiConverterTypeFFIUserId.write(v1, into: &buf)
             
         
         case let .muc(v1):
             writeInt(&buf, Int32(2))
-            FfiConverterTypeMucId.write(v1, into: &buf)
+            FfiConverterTypeFFIMucId.write(v1, into: &buf)
             
         }
     }
@@ -9146,7 +9176,7 @@ extension RoomType: Equatable, Hashable {}
 
 public enum SidebarItemType {
     
-    case directMessage(availability: Availability, initials: String, color: HexColor, avatar: Avatar?, status: UserStatus?
+    case directMessage(userId: FfiUserId, availability: Availability, avatarBundle: AvatarBundle, status: UserStatus?
     )
     case group
     case privateChannel
@@ -9169,7 +9199,7 @@ public struct FfiConverterTypeSidebarItemType: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .directMessage(availability: try FfiConverterTypeAvailability.read(from: &buf), initials: try FfiConverterString.read(from: &buf), color: try FfiConverterTypeHexColor.read(from: &buf), avatar: try FfiConverterOptionTypeAvatar.read(from: &buf), status: try FfiConverterOptionTypeUserStatus.read(from: &buf)
+        case 1: return .directMessage(userId: try FfiConverterTypeFFIUserId.read(from: &buf), availability: try FfiConverterTypeAvailability.read(from: &buf), avatarBundle: try FfiConverterTypeAvatarBundle.read(from: &buf), status: try FfiConverterOptionTypeUserStatus.read(from: &buf)
         )
         
         case 2: return .group
@@ -9188,12 +9218,11 @@ public struct FfiConverterTypeSidebarItemType: FfiConverterRustBuffer {
         switch value {
         
         
-        case let .directMessage(availability,initials,color,avatar,status):
+        case let .directMessage(userId,availability,avatarBundle,status):
             writeInt(&buf, Int32(1))
+            FfiConverterTypeFFIUserId.write(userId, into: &buf)
             FfiConverterTypeAvailability.write(availability, into: &buf)
-            FfiConverterString.write(initials, into: &buf)
-            FfiConverterTypeHexColor.write(color, into: &buf)
-            FfiConverterOptionTypeAvatar.write(avatar, into: &buf)
+            FfiConverterTypeAvatarBundle.write(avatarBundle, into: &buf)
             FfiConverterOptionTypeUserStatus.write(status, into: &buf)
             
         
@@ -9741,6 +9770,30 @@ fileprivate struct FfiConverterOptionTypeDateTimeFixed: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeFFIUserId: FfiConverterRustBuffer {
+    typealias SwiftType = FfiUserId?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeFFIUserId.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeFFIUserId.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeMessageId: FfiConverterRustBuffer {
     typealias SwiftType = MessageId?
 
@@ -9829,30 +9882,6 @@ fileprivate struct FfiConverterOptionTypeUrl: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeUrl.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-fileprivate struct FfiConverterOptionTypeUserId: FfiConverterRustBuffer {
-    typealias SwiftType = UserId?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeUserId.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeUserId.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -10211,6 +10240,31 @@ fileprivate struct FfiConverterSequenceTypeUserBasicInfo: FfiConverterRustBuffer
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeFFIUserId: FfiConverterRustBuffer {
+    typealias SwiftType = [FfiUserId]
+
+    public static func write(_ value: [FfiUserId], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeFFIUserId.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [FfiUserId] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [FfiUserId]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeFFIUserId.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeMessageId: FfiConverterRustBuffer {
     typealias SwiftType = [MessageId]
 
@@ -10228,31 +10282,6 @@ fileprivate struct FfiConverterSequenceTypeMessageId: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeMessageId.read(from: &buf))
-        }
-        return seq
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-fileprivate struct FfiConverterSequenceTypeUserId: FfiConverterRustBuffer {
-    typealias SwiftType = [UserId]
-
-    public static func write(_ value: [UserId], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypeUserId.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [UserId] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [UserId]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeUserId.read(from: &buf))
         }
         return seq
     }
@@ -10493,6 +10522,108 @@ public func FfiConverterTypeEmoji_lower(_ value: Emoji) -> RustBuffer {
  * Typealias from the type name used in the UDL file to the custom type.  This
  * is needed because the UDL type name is used in function/method signatures.
  */
+public typealias FfiMucId = MucId
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFFIMucId: FfiConverter {
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FfiMucId {
+        let builtinValue = try FfiConverterTypeBareJid.read(from: &buf)
+        return MucId(unsafe: builtinValue)
+    }
+
+    public static func write(_ value: FfiMucId, into buf: inout [UInt8]) {
+        let builtinValue = value.rawValue
+        return FfiConverterTypeBareJid.write(builtinValue, into: &buf)
+    }
+
+    public static func lift(_ value: RustBuffer) throws -> FfiMucId {
+        let builtinValue = try FfiConverterTypeBareJid_lift(value)
+        return MucId(unsafe: builtinValue)
+    }
+
+    public static func lower(_ value: FfiMucId) -> RustBuffer {
+        let builtinValue = value.rawValue
+        return FfiConverterTypeBareJid_lower(builtinValue)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFFIMucId_lift(_ value: RustBuffer) throws -> FfiMucId {
+    return try FfiConverterTypeFFIMucId.lift(value)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFFIMucId_lower(_ value: FfiMucId) -> RustBuffer {
+    return FfiConverterTypeFFIMucId.lower(value)
+}
+
+
+
+
+
+/**
+ * Typealias from the type name used in the UDL file to the custom type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias FfiUserId = UserId
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFFIUserId: FfiConverter {
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FfiUserId {
+        let builtinValue = try FfiConverterTypeBareJid.read(from: &buf)
+        return UserId(unsafe: builtinValue)
+    }
+
+    public static func write(_ value: FfiUserId, into buf: inout [UInt8]) {
+        let builtinValue = value.rawValue
+        return FfiConverterTypeBareJid.write(builtinValue, into: &buf)
+    }
+
+    public static func lift(_ value: RustBuffer) throws -> FfiUserId {
+        let builtinValue = try FfiConverterTypeBareJid_lift(value)
+        return UserId(unsafe: builtinValue)
+    }
+
+    public static func lower(_ value: FfiUserId) -> RustBuffer {
+        let builtinValue = value.rawValue
+        return FfiConverterTypeBareJid_lower(builtinValue)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFFIUserId_lift(_ value: RustBuffer) throws -> FfiUserId {
+    return try FfiConverterTypeFFIUserId.lift(value)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFFIUserId_lower(_ value: FfiUserId) -> RustBuffer {
+    return FfiConverterTypeFFIUserId.lower(value)
+}
+
+
+
+
+
+/**
+ * Typealias from the type name used in the UDL file to the custom type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
 public typealias HexColor = UIColor
 
 
@@ -10631,50 +10762,6 @@ public func FfiConverterTypeMime_lower(_ value: Mime) -> RustBuffer {
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
  */
-public typealias MucId = BareJid
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeMucId: FfiConverter {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MucId {
-        return try FfiConverterTypeBareJid.read(from: &buf)
-    }
-
-    public static func write(_ value: MucId, into buf: inout [UInt8]) {
-        return FfiConverterTypeBareJid.write(value, into: &buf)
-    }
-
-    public static func lift(_ value: RustBuffer) throws -> MucId {
-        return try FfiConverterTypeBareJid_lift(value)
-    }
-
-    public static func lower(_ value: MucId) -> RustBuffer {
-        return FfiConverterTypeBareJid_lower(value)
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeMucId_lift(_ value: RustBuffer) throws -> MucId {
-    return try FfiConverterTypeMucId.lift(value)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeMucId_lower(_ value: MucId) -> RustBuffer {
-    return FfiConverterTypeMucId.lower(value)
-}
-
-
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
 public typealias OccupantId = String
 
 #if swift(>=5.8)
@@ -10771,26 +10858,26 @@ public func FfiConverterTypePathBuf_lower(_ value: PathBuf) -> RustBuffer {
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
  */
-public typealias PresenceSubRequestId = UserId
+public typealias PresenceSubRequestId = FfiUserId
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
 public struct FfiConverterTypePresenceSubRequestId: FfiConverter {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PresenceSubRequestId {
-        return try FfiConverterTypeUserId.read(from: &buf)
+        return try FfiConverterTypeFFIUserId.read(from: &buf)
     }
 
     public static func write(_ value: PresenceSubRequestId, into buf: inout [UInt8]) {
-        return FfiConverterTypeUserId.write(value, into: &buf)
+        return FfiConverterTypeFFIUserId.write(value, into: &buf)
     }
 
     public static func lift(_ value: RustBuffer) throws -> PresenceSubRequestId {
-        return try FfiConverterTypeUserId_lift(value)
+        return try FfiConverterTypeFFIUserId_lift(value)
     }
 
     public static func lower(_ value: PresenceSubRequestId) -> RustBuffer {
-        return FfiConverterTypeUserId_lower(value)
+        return FfiConverterTypeFFIUserId_lower(value)
     }
 }
 
@@ -10949,50 +11036,6 @@ public func FfiConverterTypeUrl_lower(_ value: Url) -> RustBuffer {
     return FfiConverterTypeUrl.lower(value)
 }
 
-
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
-public typealias UserId = BareJid
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeUserId: FfiConverter {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserId {
-        return try FfiConverterTypeBareJid.read(from: &buf)
-    }
-
-    public static func write(_ value: UserId, into buf: inout [UInt8]) {
-        return FfiConverterTypeBareJid.write(value, into: &buf)
-    }
-
-    public static func lift(_ value: RustBuffer) throws -> UserId {
-        return try FfiConverterTypeBareJid_lift(value)
-    }
-
-    public static func lower(_ value: UserId) -> RustBuffer {
-        return FfiConverterTypeBareJid_lower(value)
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeUserId_lift(_ value: RustBuffer) throws -> UserId {
-    return try FfiConverterTypeUserId.lift(value)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeUserId_lower(_ value: UserId) -> RustBuffer {
-    return FfiConverterTypeUserId.lower(value)
-}
-
 private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
 private let UNIFFI_RUST_FUTURE_POLL_MAYBE_READY: Int8 = 1
 
@@ -11039,6 +11082,20 @@ fileprivate func uniffiFutureContinuationCallback(handle: UInt64, pollResult: In
         print("uniffiFutureContinuationCallback invalid handle")
     }
 }
+public func isValidMucId(mucId: String) -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_func_is_valid_muc_id(
+        FfiConverterString.lower(mucId),$0
+    )
+})
+}
+public func isValidUserId(userId: String) -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_func_is_valid_user_id(
+        FfiConverterString.lower(userId),$0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -11055,34 +11112,40 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_accountbookmarksclient_add_bookmark() != 16579) {
+    if (uniffi_prose_sdk_ffi_checksum_func_is_valid_muc_id() != 48502) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_func_is_valid_user_id() != 33267) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_method_accountbookmarksclient_add_bookmark() != 9422) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_accountbookmarksclient_load_bookmarks() != 45185) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_accountbookmarksclient_remove_bookmark() != 20768) {
+    if (uniffi_prose_sdk_ffi_checksum_method_accountbookmarksclient_remove_bookmark() != 41649) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_accountbookmarksclient_save_bookmarks() != 29810) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_accountbookmarksclient_select_bookmark() != 21127) {
+    if (uniffi_prose_sdk_ffi_checksum_method_accountbookmarksclient_select_bookmark() != 40635) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_avatar_id() != 51772) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_channel_invite_users() != 31788) {
+    if (uniffi_prose_sdk_ffi_checksum_method_channel_invite_users() != 34156) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_add_contact() != 15569) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_add_contact() != 61105) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_approve_presence_sub_request() != 13663) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_approve_presence_sub_request() != 41126) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_block_user() != 50203) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_block_user() != 53712) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_change_password() != 62361) {
@@ -11091,10 +11154,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_clear_block_list() != 46475) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_connect() != 7683) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_connect() != 32643) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_create_group() != 26185) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_create_group() != 27522) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_create_private_channel() != 6938) {
@@ -11106,10 +11169,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_delete_cached_data() != 5481) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_deny_presence_sub_request() != 2203) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_deny_presence_sub_request() != 24221) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_destroy_room() != 28316) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_destroy_room() != 51657) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_disconnect() != 21087) {
@@ -11124,7 +11187,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_get_connected_room() != 59141) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_join_room() != 63549) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_join_room() != 63970) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_load_account_info() != 29622) {
@@ -11142,13 +11205,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_load_presence_sub_requests() != 54504) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_load_profile() != 32088) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_load_profile() != 31770) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_load_public_channels() != 36765) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_load_user_metadata() != 6516) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_load_user_metadata() != 29423) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_load_workspace_icon() != 21578) {
@@ -11160,13 +11223,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_preview_markdown() != 64100) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_remove_contact() != 18687) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_remove_contact() != 35863) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_remove_item_from_sidebar() != 10587) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_request_presence_sub() != 29804) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_request_presence_sub() != 36824) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_request_upload_slot() != 5044) {
@@ -11187,7 +11250,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_sidebar_items() != 55249) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_start_conversation() != 3148) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_start_conversation() != 33066) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_client_start_observing_rooms() != 21767) {
@@ -11196,7 +11259,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_toggle_sidebar_favorite() != 43173) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_client_unblock_user() != 28062) {
+    if (uniffi_prose_sdk_ffi_checksum_method_client_unblock_user() != 20545) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_clientdelegate_handle_event() != 21258) {
@@ -11454,7 +11517,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_id() != 63426) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_invite_users() != 9481) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_invite_users() != 27473) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_load_composing_users() != 21927) {
@@ -11520,7 +11583,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_id() != 39434) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_invite_users() != 10126) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_invite_users() != 26951) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_load_composing_users() != 61910) {
