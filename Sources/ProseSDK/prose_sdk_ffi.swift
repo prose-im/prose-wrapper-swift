@@ -418,6 +418,22 @@ fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
+    typealias FfiType = Int32
+    typealias SwiftType = Int32
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Int32 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Int32, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
@@ -1048,6 +1064,8 @@ public protocol ClientProtocol: AnyObject, Sendable {
     
     func loadUserMetadata(userId: FfiUserId) async throws  -> UserMetadata
     
+    func loadUserPresenceInfo(userId: FfiUserId) async throws  -> UserPresenceInfo?
+    
     func loadWorkspaceIcon(icon: WorkspaceIcon) async throws  -> PathBuf?
     
     func loadWorkspaceInfo() async throws  -> WorkspaceInfo
@@ -1635,6 +1653,23 @@ open func loadUserMetadata(userId: FfiUserId)async throws  -> UserMetadata  {
             completeFunc: ffi_prose_sdk_ffi_rust_future_complete_rust_buffer,
             freeFunc: ffi_prose_sdk_ffi_rust_future_free_rust_buffer,
             liftFunc: FfiConverterTypeUserMetadata_lift,
+            errorHandler: FfiConverterTypeClientError_lift
+        )
+}
+    
+open func loadUserPresenceInfo(userId: FfiUserId)async throws  -> UserPresenceInfo?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_prose_sdk_ffi_fn_method_client_load_user_presence_info(
+                    self.uniffiClonePointer(),
+                    FfiConverterTypeFFIUserId_lower(userId)
+                )
+            },
+            pollFunc: ffi_prose_sdk_ffi_rust_future_poll_rust_buffer,
+            completeFunc: ffi_prose_sdk_ffi_rust_future_complete_rust_buffer,
+            freeFunc: ffi_prose_sdk_ffi_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeUserPresenceInfo.lift,
             errorHandler: FfiConverterTypeClientError_lift
         )
 }
@@ -2308,7 +2343,7 @@ public func FfiConverterTypeHasMutableName_lower(_ value: HasMutableName) -> Uns
 
 public protocol MucRoomProtocol: AnyObject, Sendable {
     
-    func subject()  -> String?
+    func topic()  -> String?
     
     func setTopic(topic: String?) async throws 
     
@@ -2365,9 +2400,9 @@ open class MucRoom: MucRoomProtocol, @unchecked Sendable {
     
 
     
-open func subject() -> String?  {
+open func topic() -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
-    uniffi_prose_sdk_ffi_fn_method_mucroom_subject(self.uniffiClonePointer(),$0
+    uniffi_prose_sdk_ffi_fn_method_mucroom_topic(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -2454,6 +2489,8 @@ public protocol RoomBaseProtocol: AnyObject, Sendable {
     func id()  -> RoomId
     
     func name()  -> String
+    
+    func description()  -> String?
     
     func participants()  -> [ParticipantInfo]
     
@@ -2555,6 +2592,13 @@ open func id() -> RoomId  {
 open func name() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_prose_sdk_ffi_fn_method_roombase_name(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func description() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roombase_description(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -2864,6 +2908,8 @@ public func FfiConverterTypeRoomBase_lower(_ value: RoomBase) -> UnsafeMutableRa
 
 public protocol RoomDirectMessageProtocol: AnyObject, Sendable {
     
+    func description()  -> String?
+    
     func id()  -> RoomId
     
     func isEncryptionEnabled()  -> Bool
@@ -2956,6 +3002,13 @@ open class RoomDirectMessage: RoomDirectMessageProtocol, @unchecked Sendable {
 
     
 
+    
+open func description() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roomdirectmessage_description(self.uniffiClonePointer(),$0
+    )
+})
+}
     
 open func id() -> RoomId  {
     return try!  FfiConverterTypeRoomId_lift(try! rustCall() {
@@ -3310,6 +3363,8 @@ public func FfiConverterTypeRoomDirectMessage_lower(_ value: RoomDirectMessage) 
 
 public protocol RoomGenericProtocol: AnyObject, Sendable {
     
+    func description()  -> String?
+    
     func id()  -> RoomId
     
     func loadComposingUsers() async throws  -> [ParticipantBasicInfo]
@@ -3346,9 +3401,9 @@ public protocol RoomGenericProtocol: AnyObject, Sendable {
     
     func state()  -> RoomState
     
-    func subject()  -> String?
-    
     func toggleReactionToMessage(messageId: MessageId, emoji: Emoji) async throws 
+    
+    func topic()  -> String?
     
     func updateMessage(messageId: MessageId, request: SendMessageRequest) async throws 
     
@@ -3404,6 +3459,13 @@ open class RoomGeneric: RoomGenericProtocol, @unchecked Sendable {
 
     
 
+    
+open func description() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roomgeneric_description(self.uniffiClonePointer(),$0
+    )
+})
+}
     
 open func id() -> RoomId  {
     return try!  FfiConverterTypeRoomId_lift(try! rustCall() {
@@ -3671,13 +3733,6 @@ open func state() -> RoomState  {
 })
 }
     
-open func subject() -> String?  {
-    return try!  FfiConverterOptionString.lift(try! rustCall() {
-    uniffi_prose_sdk_ffi_fn_method_roomgeneric_subject(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
 open func toggleReactionToMessage(messageId: MessageId, emoji: Emoji)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -3693,6 +3748,13 @@ open func toggleReactionToMessage(messageId: MessageId, emoji: Emoji)async throw
             liftFunc: { $0 },
             errorHandler: FfiConverterTypeClientError_lift
         )
+}
+    
+open func topic() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roomgeneric_topic(self.uniffiClonePointer(),$0
+    )
+})
 }
     
 open func updateMessage(messageId: MessageId, request: SendMessageRequest)async throws   {
@@ -3778,6 +3840,8 @@ public func FfiConverterTypeRoomGeneric_lower(_ value: RoomGeneric) -> UnsafeMut
 
 public protocol RoomGroupProtocol: AnyObject, Sendable {
     
+    func description()  -> String?
+    
     func id()  -> RoomId
     
     func loadComposingUsers() async throws  -> [ParticipantBasicInfo]
@@ -3814,9 +3878,9 @@ public protocol RoomGroupProtocol: AnyObject, Sendable {
     
     func state()  -> RoomState
     
-    func subject()  -> String?
-    
     func toggleReactionToMessage(messageId: MessageId, emoji: Emoji) async throws 
+    
+    func topic()  -> String?
     
     func updateMessage(messageId: MessageId, request: SendMessageRequest) async throws 
     
@@ -3872,6 +3936,13 @@ open class RoomGroup: RoomGroupProtocol, @unchecked Sendable {
 
     
 
+    
+open func description() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roomgroup_description(self.uniffiClonePointer(),$0
+    )
+})
+}
     
 open func id() -> RoomId  {
     return try!  FfiConverterTypeRoomId_lift(try! rustCall() {
@@ -4139,13 +4210,6 @@ open func state() -> RoomState  {
 })
 }
     
-open func subject() -> String?  {
-    return try!  FfiConverterOptionString.lift(try! rustCall() {
-    uniffi_prose_sdk_ffi_fn_method_roomgroup_subject(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
 open func toggleReactionToMessage(messageId: MessageId, emoji: Emoji)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -4161,6 +4225,13 @@ open func toggleReactionToMessage(messageId: MessageId, emoji: Emoji)async throw
             liftFunc: { $0 },
             errorHandler: FfiConverterTypeClientError_lift
         )
+}
+    
+open func topic() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roomgroup_topic(self.uniffiClonePointer(),$0
+    )
+})
 }
     
 open func updateMessage(messageId: MessageId, request: SendMessageRequest)async throws   {
@@ -4244,6 +4315,8 @@ public func FfiConverterTypeRoomGroup_lower(_ value: RoomGroup) -> UnsafeMutable
 
 public protocol RoomPrivateChannelProtocol: AnyObject, Sendable {
     
+    func description()  -> String?
+    
     func id()  -> RoomId
     
     func inviteUsers(users: [FfiUserId]) async throws 
@@ -4282,9 +4355,9 @@ public protocol RoomPrivateChannelProtocol: AnyObject, Sendable {
     
     func state()  -> RoomState
     
-    func subject()  -> String?
-    
     func toggleReactionToMessage(messageId: MessageId, emoji: Emoji) async throws 
+    
+    func topic()  -> String?
     
     func updateMessage(messageId: MessageId, request: SendMessageRequest) async throws 
     
@@ -4340,6 +4413,13 @@ open class RoomPrivateChannel: RoomPrivateChannelProtocol, @unchecked Sendable {
 
     
 
+    
+open func description() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roomprivatechannel_description(self.uniffiClonePointer(),$0
+    )
+})
+}
     
 open func id() -> RoomId  {
     return try!  FfiConverterTypeRoomId_lift(try! rustCall() {
@@ -4624,13 +4704,6 @@ open func state() -> RoomState  {
 })
 }
     
-open func subject() -> String?  {
-    return try!  FfiConverterOptionString.lift(try! rustCall() {
-    uniffi_prose_sdk_ffi_fn_method_roomprivatechannel_subject(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
 open func toggleReactionToMessage(messageId: MessageId, emoji: Emoji)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -4646,6 +4719,13 @@ open func toggleReactionToMessage(messageId: MessageId, emoji: Emoji)async throw
             liftFunc: { $0 },
             errorHandler: FfiConverterTypeClientError_lift
         )
+}
+    
+open func topic() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roomprivatechannel_topic(self.uniffiClonePointer(),$0
+    )
+})
 }
     
 open func updateMessage(messageId: MessageId, request: SendMessageRequest)async throws   {
@@ -4733,6 +4813,8 @@ public func FfiConverterTypeRoomPrivateChannel_lower(_ value: RoomPrivateChannel
 
 public protocol RoomPublicChannelProtocol: AnyObject, Sendable {
     
+    func description()  -> String?
+    
     func id()  -> RoomId
     
     func inviteUsers(users: [FfiUserId]) async throws 
@@ -4771,9 +4853,9 @@ public protocol RoomPublicChannelProtocol: AnyObject, Sendable {
     
     func state()  -> RoomState
     
-    func subject()  -> String?
-    
     func toggleReactionToMessage(messageId: MessageId, emoji: Emoji) async throws 
+    
+    func topic()  -> String?
     
     func updateMessage(messageId: MessageId, request: SendMessageRequest) async throws 
     
@@ -4829,6 +4911,13 @@ open class RoomPublicChannel: RoomPublicChannelProtocol, @unchecked Sendable {
 
     
 
+    
+open func description() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roompublicchannel_description(self.uniffiClonePointer(),$0
+    )
+})
+}
     
 open func id() -> RoomId  {
     return try!  FfiConverterTypeRoomId_lift(try! rustCall() {
@@ -5113,13 +5202,6 @@ open func state() -> RoomState  {
 })
 }
     
-open func subject() -> String?  {
-    return try!  FfiConverterOptionString.lift(try! rustCall() {
-    uniffi_prose_sdk_ffi_fn_method_roompublicchannel_subject(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
 open func toggleReactionToMessage(messageId: MessageId, emoji: Emoji)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -5135,6 +5217,13 @@ open func toggleReactionToMessage(messageId: MessageId, emoji: Emoji)async throw
             liftFunc: { $0 },
             errorHandler: FfiConverterTypeClientError_lift
         )
+}
+    
+open func topic() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_prose_sdk_ffi_fn_method_roompublicchannel_topic(self.uniffiClonePointer(),$0
+    )
+})
 }
     
 open func updateMessage(messageId: MessageId, request: SendMessageRequest)async throws   {
@@ -5858,6 +5947,84 @@ public func FfiConverterTypeLastActivity_lower(_ value: LastActivity) -> RustBuf
 }
 
 
+public struct LocalTime {
+    public var timestamp: DateTime
+    public var timezoneOffset: Int32
+    public var formattedTimezoneOffset: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(timestamp: DateTime, timezoneOffset: Int32, formattedTimezoneOffset: String) {
+        self.timestamp = timestamp
+        self.timezoneOffset = timezoneOffset
+        self.formattedTimezoneOffset = formattedTimezoneOffset
+    }
+}
+
+#if compiler(>=6)
+extension LocalTime: Sendable {}
+#endif
+
+
+extension LocalTime: Equatable, Hashable {
+    public static func ==(lhs: LocalTime, rhs: LocalTime) -> Bool {
+        if lhs.timestamp != rhs.timestamp {
+            return false
+        }
+        if lhs.timezoneOffset != rhs.timezoneOffset {
+            return false
+        }
+        if lhs.formattedTimezoneOffset != rhs.formattedTimezoneOffset {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(timestamp)
+        hasher.combine(timezoneOffset)
+        hasher.combine(formattedTimezoneOffset)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLocalTime: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalTime {
+        return
+            try LocalTime(
+                timestamp: FfiConverterTypeDateTime.read(from: &buf), 
+                timezoneOffset: FfiConverterInt32.read(from: &buf), 
+                formattedTimezoneOffset: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LocalTime, into buf: inout [UInt8]) {
+        FfiConverterTypeDateTime.write(value.timestamp, into: &buf)
+        FfiConverterInt32.write(value.timezoneOffset, into: &buf)
+        FfiConverterString.write(value.formattedTimezoneOffset, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLocalTime_lift(_ buf: RustBuffer) throws -> LocalTime {
+    return try FfiConverterTypeLocalTime.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLocalTime_lower(_ value: LocalTime) -> RustBuffer {
+    return FfiConverterTypeLocalTime.lower(value)
+}
+
+
 public struct Mention {
     public var user: FfiUserId
     public var range: UnicodeScalarRange?
@@ -6311,14 +6478,14 @@ public func FfiConverterTypeMessageSender_lower(_ value: MessageSender) -> RustB
 public struct ParticipantBasicInfo {
     public var id: ParticipantId
     public var name: String
-    public var avatar: Avatar?
+    public var avatarBundle: AvatarBundle
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: ParticipantId, name: String, avatar: Avatar?) {
+    public init(id: ParticipantId, name: String, avatarBundle: AvatarBundle) {
         self.id = id
         self.name = name
-        self.avatar = avatar
+        self.avatarBundle = avatarBundle
     }
 }
 
@@ -6337,14 +6504,14 @@ public struct FfiConverterTypeParticipantBasicInfo: FfiConverterRustBuffer {
             try ParticipantBasicInfo(
                 id: FfiConverterTypeParticipantId.read(from: &buf), 
                 name: FfiConverterString.read(from: &buf), 
-                avatar: FfiConverterOptionTypeAvatar.read(from: &buf)
+                avatarBundle: FfiConverterTypeAvatarBundle.read(from: &buf)
         )
     }
 
     public static func write(_ value: ParticipantBasicInfo, into buf: inout [UInt8]) {
         FfiConverterTypeParticipantId.write(value.id, into: &buf)
         FfiConverterString.write(value.name, into: &buf)
-        FfiConverterOptionTypeAvatar.write(value.avatar, into: &buf)
+        FfiConverterTypeAvatarBundle.write(value.avatarBundle, into: &buf)
     }
 }
 
@@ -6371,20 +6538,20 @@ public struct ParticipantInfo {
     public var isSelf: Bool
     public var availability: Availability
     public var affiliation: RoomAffiliation
-    public var avatar: Avatar?
+    public var avatarBundle: AvatarBundle
     public var client: JabberClient?
     public var status: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: ParticipantId, userId: FfiUserId?, name: String, isSelf: Bool, availability: Availability, affiliation: RoomAffiliation, avatar: Avatar?, client: JabberClient?, status: String?) {
+    public init(id: ParticipantId, userId: FfiUserId?, name: String, isSelf: Bool, availability: Availability, affiliation: RoomAffiliation, avatarBundle: AvatarBundle, client: JabberClient?, status: String?) {
         self.id = id
         self.userId = userId
         self.name = name
         self.isSelf = isSelf
         self.availability = availability
         self.affiliation = affiliation
-        self.avatar = avatar
+        self.avatarBundle = avatarBundle
         self.client = client
         self.status = status
     }
@@ -6409,7 +6576,7 @@ public struct FfiConverterTypeParticipantInfo: FfiConverterRustBuffer {
                 isSelf: FfiConverterBool.read(from: &buf), 
                 availability: FfiConverterTypeAvailability.read(from: &buf), 
                 affiliation: FfiConverterTypeRoomAffiliation.read(from: &buf), 
-                avatar: FfiConverterOptionTypeAvatar.read(from: &buf), 
+                avatarBundle: FfiConverterTypeAvatarBundle.read(from: &buf), 
                 client: FfiConverterOptionTypeJabberClient.read(from: &buf), 
                 status: FfiConverterOptionString.read(from: &buf)
         )
@@ -6422,7 +6589,7 @@ public struct FfiConverterTypeParticipantInfo: FfiConverterRustBuffer {
         FfiConverterBool.write(value.isSelf, into: &buf)
         FfiConverterTypeAvailability.write(value.availability, into: &buf)
         FfiConverterTypeRoomAffiliation.write(value.affiliation, into: &buf)
-        FfiConverterOptionTypeAvatar.write(value.avatar, into: &buf)
+        FfiConverterTypeAvatarBundle.write(value.avatarBundle, into: &buf)
         FfiConverterOptionTypeJabberClient.write(value.client, into: &buf)
         FfiConverterOptionString.write(value.status, into: &buf)
     }
@@ -7302,12 +7469,12 @@ public func FfiConverterTypeUserBasicInfo_lower(_ value: UserBasicInfo) -> RustB
 
 
 public struct UserMetadata {
-    public var localTime: DateTimeFixed?
+    public var localTime: LocalTime?
     public var lastActivity: LastActivity?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(localTime: DateTimeFixed?, lastActivity: LastActivity?) {
+    public init(localTime: LocalTime?, lastActivity: LastActivity?) {
         self.localTime = localTime
         self.lastActivity = lastActivity
     }
@@ -7344,13 +7511,13 @@ public struct FfiConverterTypeUserMetadata: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserMetadata {
         return
             try UserMetadata(
-                localTime: FfiConverterOptionTypeDateTimeFixed.read(from: &buf), 
+                localTime: FfiConverterOptionTypeLocalTime.read(from: &buf), 
                 lastActivity: FfiConverterOptionTypeLastActivity.read(from: &buf)
         )
     }
 
     public static func write(_ value: UserMetadata, into buf: inout [UInt8]) {
-        FfiConverterOptionTypeDateTimeFixed.write(value.localTime, into: &buf)
+        FfiConverterOptionTypeLocalTime.write(value.localTime, into: &buf)
         FfiConverterOptionTypeLastActivity.write(value.lastActivity, into: &buf)
     }
 }
@@ -7368,6 +7535,74 @@ public func FfiConverterTypeUserMetadata_lift(_ buf: RustBuffer) throws -> UserM
 #endif
 public func FfiConverterTypeUserMetadata_lower(_ value: UserMetadata) -> RustBuffer {
     return FfiConverterTypeUserMetadata.lower(value)
+}
+
+
+public struct UserPresenceInfo {
+    public var id: FfiUserId
+    public var name: String
+    public var fullName: String?
+    public var availability: Availability
+    public var avatar: Avatar?
+    public var status: UserStatus?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: FfiUserId, name: String, fullName: String?, availability: Availability, avatar: Avatar?, status: UserStatus?) {
+        self.id = id
+        self.name = name
+        self.fullName = fullName
+        self.availability = availability
+        self.avatar = avatar
+        self.status = status
+    }
+}
+
+#if compiler(>=6)
+extension UserPresenceInfo: Sendable {}
+#endif
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeUserPresenceInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserPresenceInfo {
+        return
+            try UserPresenceInfo(
+                id: FfiConverterTypeFFIUserId.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                fullName: FfiConverterOptionString.read(from: &buf), 
+                availability: FfiConverterTypeAvailability.read(from: &buf), 
+                avatar: FfiConverterOptionTypeAvatar.read(from: &buf), 
+                status: FfiConverterOptionTypeUserStatus.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UserPresenceInfo, into buf: inout [UInt8]) {
+        FfiConverterTypeFFIUserId.write(value.id, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterOptionString.write(value.fullName, into: &buf)
+        FfiConverterTypeAvailability.write(value.availability, into: &buf)
+        FfiConverterOptionTypeAvatar.write(value.avatar, into: &buf)
+        FfiConverterOptionTypeUserStatus.write(value.status, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserPresenceInfo_lift(_ buf: RustBuffer) throws -> UserPresenceInfo {
+    return try FfiConverterTypeUserPresenceInfo.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeUserPresenceInfo_lower(_ value: UserPresenceInfo) -> RustBuffer {
+    return FfiConverterTypeUserPresenceInfo.lower(value)
 }
 
 
@@ -9482,6 +9717,30 @@ fileprivate struct FfiConverterOptionTypeLastActivity: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeLocalTime: FfiConverterRustBuffer {
+    typealias SwiftType = LocalTime?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLocalTime.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLocalTime.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeReplyTo: FfiConverterRustBuffer {
     typealias SwiftType = ReplyTo?
 
@@ -9570,6 +9829,30 @@ fileprivate struct FfiConverterOptionTypeUnicodeScalarRange: FfiConverterRustBuf
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeUnicodeScalarRange.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeUserPresenceInfo: FfiConverterRustBuffer {
+    typealias SwiftType = UserPresenceInfo?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeUserPresenceInfo.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeUserPresenceInfo.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -9738,30 +10021,6 @@ fileprivate struct FfiConverterOptionTypeDateTime: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeDateTime.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-fileprivate struct FfiConverterOptionTypeDateTimeFixed: FfiConverterRustBuffer {
-    typealias SwiftType = DateTimeFixed?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeDateTimeFixed.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeDateTimeFixed.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -10424,50 +10683,6 @@ public func FfiConverterTypeDateTime_lift(_ value: Int64) throws -> DateTime {
 #endif
 public func FfiConverterTypeDateTime_lower(_ value: DateTime) -> Int64 {
     return FfiConverterTypeDateTime.lower(value)
-}
-
-
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
-public typealias DateTimeFixed = Int64
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeDateTimeFixed: FfiConverter {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DateTimeFixed {
-        return try FfiConverterInt64.read(from: &buf)
-    }
-
-    public static func write(_ value: DateTimeFixed, into buf: inout [UInt8]) {
-        return FfiConverterInt64.write(value, into: &buf)
-    }
-
-    public static func lift(_ value: Int64) throws -> DateTimeFixed {
-        return try FfiConverterInt64.lift(value)
-    }
-
-    public static func lower(_ value: DateTimeFixed) -> Int64 {
-        return FfiConverterInt64.lower(value)
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeDateTimeFixed_lift(_ value: Int64) throws -> DateTimeFixed {
-    return try FfiConverterTypeDateTimeFixed.lift(value)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeDateTimeFixed_lower(_ value: DateTimeFixed) -> Int64 {
-    return FfiConverterTypeDateTimeFixed.lower(value)
 }
 
 
@@ -11214,6 +11429,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_client_load_user_metadata() != 29423) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_prose_sdk_ffi_checksum_method_client_load_user_presence_info() != 43468) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_prose_sdk_ffi_checksum_method_client_load_workspace_icon() != 21578) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11268,7 +11486,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_hasmutablename_set_name() != 63119) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_mucroom_subject() != 2121) {
+    if (uniffi_prose_sdk_ffi_checksum_method_mucroom_topic() != 19129) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_mucroom_set_topic() != 42576) {
@@ -11283,49 +11501,55 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_roombase_name() != 1114) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_participants() != 37342) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_description() != 31494) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_send_message() != 59372) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_participants() != 47930) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_update_message() != 24765) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_send_message() != 20388) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_retract_message() != 54010) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_update_message() != 27274) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_toggle_reaction_to_message() != 62115) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_retract_message() != 1976) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_latest_messages() != 36432) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_toggle_reaction_to_message() != 43725) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_messages_before() != 1194) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_latest_messages() != 12135) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_messages_with_ids() != 43873) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_messages_before() != 42704) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_unread_messages() != 49150) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_messages_with_ids() != 33987) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_set_user_is_composing() != 38309) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_unread_messages() != 38187) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_composing_users() != 62161) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_set_user_is_composing() != 47430) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_save_draft() != 54481) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_composing_users() != 22339) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_draft() != 21980) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_save_draft() != 58923) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_mark_as_read() != 17512) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_load_draft() != 5317) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roombase_set_last_read_message() != 46359) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_mark_as_read() != 7782) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_method_roombase_set_last_read_message() != 36819) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_method_roomdirectmessage_description() != 15036) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_roomdirectmessage_id() != 41656) {
@@ -11388,6 +11612,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_roomdirectmessage_update_message() != 27957) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_prose_sdk_ffi_checksum_method_roomgeneric_description() != 3743) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_prose_sdk_ffi_checksum_method_roomgeneric_id() != 28892) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11442,13 +11669,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_roomgeneric_state() != 50874) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roomgeneric_subject() != 37575) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_prose_sdk_ffi_checksum_method_roomgeneric_toggle_reaction_to_message() != 46556) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_prose_sdk_ffi_checksum_method_roomgeneric_topic() != 50101) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_prose_sdk_ffi_checksum_method_roomgeneric_update_message() != 17707) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_method_roomgroup_description() != 16296) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_roomgroup_id() != 43551) {
@@ -11505,13 +11735,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_roomgroup_state() != 58138) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roomgroup_subject() != 11269) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_prose_sdk_ffi_checksum_method_roomgroup_toggle_reaction_to_message() != 58018) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_prose_sdk_ffi_checksum_method_roomgroup_topic() != 32141) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_prose_sdk_ffi_checksum_method_roomgroup_update_message() != 56772) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_description() != 13996) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_id() != 63426) {
@@ -11571,13 +11804,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_state() != 27121) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_subject() != 51015) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_toggle_reaction_to_message() != 32643) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_topic() != 17247) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_prose_sdk_ffi_checksum_method_roomprivatechannel_update_message() != 41482) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_description() != 53099) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_id() != 39434) {
@@ -11637,10 +11873,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_state() != 33467) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_subject() != 64102) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_toggle_reaction_to_message() != 56202) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_toggle_reaction_to_message() != 56202) {
+    if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_topic() != 471) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_prose_sdk_ffi_checksum_method_roompublicchannel_update_message() != 11951) {
